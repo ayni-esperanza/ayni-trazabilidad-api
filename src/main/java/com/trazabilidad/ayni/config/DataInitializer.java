@@ -62,6 +62,7 @@ public class DataInitializer implements CommandLineRunner {
         List<Permiso> permisos = new ArrayList<>();
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_USUARIOS")
                 .modulo(Constants.Modulos.USUARIOS)
                 .descripcion("Gestión completa de usuarios")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -72,6 +73,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_ROLES")
                 .modulo(Constants.Modulos.ROLES)
                 .descripcion("Gestión completa de roles")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -82,6 +84,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_PERMISOS")
                 .modulo(Constants.Modulos.PERMISOS)
                 .descripcion("Gestión completa de permisos")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -92,6 +95,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_SOLICITUDES")
                 .modulo(Constants.Modulos.SOLICITUDES)
                 .descripcion("Gestión de solicitudes")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -102,6 +106,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_PROCESOS")
                 .modulo(Constants.Modulos.PROCESOS)
                 .descripcion("Configuración de procesos")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -112,6 +117,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_TAREAS")
                 .modulo(Constants.Modulos.TAREAS)
                 .descripcion("Asignación de tareas")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -122,6 +128,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_EVIDENCIAS")
                 .modulo(Constants.Modulos.EVIDENCIAS)
                 .descripcion("Gestión de informes y evidencias")
                 .acciones(new HashSet<>(Arrays.asList(
@@ -132,12 +139,14 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_TABLERO")
                 .modulo(Constants.Modulos.TABLERO)
                 .descripcion("Acceso al tablero de control")
                 .acciones(new HashSet<>(List.of(Constants.Acciones.LEER)))
                 .build());
 
         permisos.add(Permiso.builder()
+                .nombre("PERM_ESTADISTICAS")
                 .modulo(Constants.Modulos.ESTADISTICAS)
                 .descripcion("Visualización de estadísticas e indicadores")
                 .acciones(new HashSet<>(List.of(Constants.Acciones.LEER)))
