@@ -10,6 +10,7 @@ import com.trazabilidad.ayni.shared.util.Constants;
 import com.trazabilidad.ayni.usuario.dto.EstadisticasUsuariosResponse;
 import com.trazabilidad.ayni.usuario.dto.UsuarioRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioResponse;
+import com.trazabilidad.ayni.usuario.dto.UsuarioCreacionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,7 +83,7 @@ public class UsuarioService {
     /**
      * Crea un nuevo usuario
      */
-    public UsuarioResponse crearUsuario(UsuarioRequest request) {
+    public UsuarioCreacionResponse crearUsuario(UsuarioRequest request) {
         log.info("Creando usuario con email: {}", request.getEmail());
 
         // Validar que no exista el email
@@ -94,9 +96,11 @@ public class UsuarioService {
             throw new DuplicateEntityException("Usuario", "username", request.getUsername());
         }
 
-        // Validar que se proporcione password en creación
-        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
-            throw new BadRequestException("La contraseña es obligatoria para crear un usuario");
+        // Generar contraseña automáticamente si no se proporciona
+        String passwordPlano = request.getPassword();
+        if (passwordPlano == null || passwordPlano.trim().isEmpty()) {
+            passwordPlano = generarPasswordAutomatico(request.getNombre(), request.getApellido());
+            log.info("Contraseña generada automáticamente para usuario: {}", request.getUsername());
         }
 
         // Obtener el rol
@@ -104,7 +108,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new EntityNotFoundException("Rol", request.getRolId()));
 
         // Encriptar password
-        String passwordEncriptado = passwordEncoder.encode(request.getPassword());
+        String passwordEncriptado = passwordEncoder.encode(passwordPlano);
 
         // Crear entidad
         Usuario usuario = usuarioMapper.toEntity(request, rol, passwordEncriptado);
@@ -114,7 +118,34 @@ public class UsuarioService {
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         log.info("Usuario creado exitosamente con ID: {}", usuarioGuardado.getId());
 
-        return usuarioMapper.toResponse(usuarioGuardado);
+        return UsuarioCreacionResponse.builder()
+                .usuario(usuarioMapper.toResponse(usuarioGuardado))
+                .passwordGenerado(passwordPlano)
+                .build();
+    }
+
+    /**
+     * Genera una contraseña automática basada en el nombre y apellido
+     * Formato: PrimerasLetrasNombre + PrimerasLetrasApellido + Números aleatorios
+     * Ejemplo: Juan Pérez -> JuPe2847
+     */
+    private String generarPasswordAutomatico(String nombre, String apellido) {
+        SecureRandom random = new SecureRandom();
+
+        // Obtener primeras 2 letras del nombre y apellido
+        String inicialesNombre = nombre.length() >= 2 ? nombre.substring(0, 2) : nombre;
+        String inicialesApellido = apellido.length() >= 2 ? apellido.substring(0, 2) : apellido;
+
+        // Capitalizar primera letra y minúscula segunda
+        inicialesNombre = inicialesNombre.substring(0, 1).toUpperCase() +
+                inicialesNombre.substring(1).toLowerCase();
+        inicialesApellido = inicialesApellido.substring(0, 1).toUpperCase() +
+                inicialesApellido.substring(1).toLowerCase();
+
+        // Generar 4 números aleatorios
+        int numeros = 1000 + random.nextInt(9000); // Números entre 1000 y 9999
+
+        return inicialesNombre + inicialesApellido + numeros;
     }
 
     /**

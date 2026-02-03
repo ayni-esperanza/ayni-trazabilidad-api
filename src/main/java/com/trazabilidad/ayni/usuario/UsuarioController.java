@@ -6,6 +6,7 @@ import com.trazabilidad.ayni.usuario.dto.EstadisticasUsuariosResponse;
 import com.trazabilidad.ayni.usuario.dto.EstadoRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioResponse;
+import com.trazabilidad.ayni.usuario.dto.UsuarioCreacionResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -57,8 +58,8 @@ public class UsuarioController {
      * Crea un nuevo usuario
      */
     @PostMapping
-    public ResponseEntity<UsuarioResponse> crearUsuario(@Valid @RequestBody UsuarioRequest request) {
-        UsuarioResponse usuario = usuarioService.crearUsuario(request);
+    public ResponseEntity<UsuarioCreacionResponse> crearUsuario(@Valid @RequestBody UsuarioRequest request) {
+        UsuarioCreacionResponse usuario = usuarioService.crearUsuario(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
     }
 
