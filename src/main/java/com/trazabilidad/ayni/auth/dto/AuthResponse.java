@@ -1,10 +1,11 @@
 package com.trazabilidad.ayni.auth.dto;
 
-import com.trazabilidad.ayni.usuario.dto.UsuarioResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * DTO para respuestas de autenticación.
@@ -40,5 +41,23 @@ public class AuthResponse {
     /**
      * Datos del usuario autenticado
      */
-    private UsuarioResponse usuario;
+    private UsuarioInfo usuario;
+
+    /**
+     * Información básica del usuario para respuestas de autenticación
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UsuarioInfo {
+        private Long id;
+        private String nombre;
+        private String apellido;
+        private String email;
+        private String username;
+        private String telefono;
+        private String foto;
+        private List<String> roles;
+    }
 }

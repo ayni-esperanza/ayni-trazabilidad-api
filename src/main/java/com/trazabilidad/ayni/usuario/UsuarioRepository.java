@@ -27,6 +27,16 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByUsername(String username);
 
     /**
+     * Busca usuario activo por username
+     */
+    Optional<Usuario> findByUsernameAndActivoTrue(String username);
+
+    /**
+     * Busca usuario activo por ID
+     */
+    Optional<Usuario> findByIdAndActivoTrue(Long id);
+
+    /**
      * Busca usuario por email o username
      */
     Optional<Usuario> findByEmailOrUsername(String email, String username);

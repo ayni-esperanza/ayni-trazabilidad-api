@@ -1,37 +1,37 @@
 package com.trazabilidad.ayni.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import jakarta.annotation.PostConstruct;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Configuración para cargar variables de entorno desde archivo .env
- * Esta clase se ejecuta antes de que Spring cargue las properties
+ * Carga variables de entorno desde archivo .env ANTES de que Spring procese las
+ * properties.
+ * Esto permite usar ${VARIABLE} en application.properties
  */
-@Configuration
-public class DotenvConfig {
+public class DotenvConfig implements EnvironmentPostProcessor {
 
-    @PostConstruct
-    public void loadEnv() {
+    @Override
+    public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         try {
             Dotenv dotenv = Dotenv.configure()
-                    .ignoreIfMissing() // No falla si no existe .env (usa valores por defecto)
+                    .ignoreIfMissing()
                     .load();
 
-            // Cargar todas las variables del .env como propiedades del sistema
-            dotenv.entries().forEach(entry -> {
-                String key = entry.getKey();
-                String value = entry.getValue();
+            Map<String, Object> dotenvProperties = new HashMap<>();
+            dotenv.entries().forEach(entry -> dotenvProperties.put(entry.getKey(), entry.getValue()));
 
-                // Solo establecer si no existe como variable de entorno del sistema
-                if (System.getenv(key) == null && System.getProperty(key) == null) {
-                    System.setProperty(key, value);
-                }
-            });
+            environment.getPropertySources()
+                    .addFirst(new MapPropertySource("dotenvProperties", dotenvProperties));
 
             System.out.println(" Variables de entorno cargadas desde .env correctamente");
         } catch (Exception e) {
-            System.out.println(" No se pudo cargar el archivo .env (usando valores por defecto): " + e.getMessage());
+            System.out.println(" No se pudo cargar el archivo .env: " + e.getMessage());
         }
     }
 }
