@@ -1,5 +1,6 @@
 package com.trazabilidad.ayni.shared.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,7 @@ public class ErrorResponse {
     /**
      * Timestamp del error
      */
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
 
