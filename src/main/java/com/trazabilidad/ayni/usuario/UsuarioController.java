@@ -6,6 +6,8 @@ import com.trazabilidad.ayni.usuario.dto.EstadisticasUsuariosResponse;
 import com.trazabilidad.ayni.usuario.dto.EstadoRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
+@Tag(name = "Usuarios", description = "Gestión de usuarios del sistema")
+@SecurityRequirement(name = "bearerAuth")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
