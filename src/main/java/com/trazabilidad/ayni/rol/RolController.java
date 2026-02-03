@@ -4,6 +4,8 @@ import com.trazabilidad.ayni.rol.dto.RolRequest;
 import com.trazabilidad.ayni.rol.dto.RolResponse;
 import com.trazabilidad.ayni.shared.dto.MessageResponse;
 import com.trazabilidad.ayni.usuario.dto.EstadoRequest;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,10 +16,13 @@ import java.util.List;
 
 /**
  * Controlador REST para la gestión de roles.
+ * API Version 1
  */
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/api/v1/roles")
 @RequiredArgsConstructor
+@Tag(name = "Roles (v1)", description = "Gestión de roles y permisos - Versión 1")
+@SecurityRequirement(name = "bearerAuth")
 public class RolController {
 
     private final RolService rolService;

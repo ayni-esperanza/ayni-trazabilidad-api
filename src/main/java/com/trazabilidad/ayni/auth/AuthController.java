@@ -18,11 +18,12 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controlador REST para autenticación y registro
+ * API Version 1
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Autenticación", description = "Endpoints para autenticación y gestión de tokens JWT")
+@Tag(name = "Autenticación (v1)", description = "Endpoints para autenticación y gestión de tokens JWT - Versión 1")
 public class AuthController {
 
     private final AuthService authService;

@@ -17,11 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controlador REST para la gestión de usuarios.
+ * API Version 1
  */
 @RestController
-@RequestMapping("/api/usuarios")
+@RequestMapping("/api/v1/usuarios")
 @RequiredArgsConstructor
-@Tag(name = "Usuarios", description = "Gestión de usuarios del sistema")
+@Tag(name = "Usuarios (v1)", description = "Gestión de usuarios del sistema - Versión 1")
 @SecurityRequirement(name = "bearerAuth")
 public class UsuarioController {
 

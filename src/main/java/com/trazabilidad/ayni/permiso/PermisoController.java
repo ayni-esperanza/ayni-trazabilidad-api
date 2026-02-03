@@ -3,6 +3,8 @@ package com.trazabilidad.ayni.permiso;
 import com.trazabilidad.ayni.permiso.dto.PermisoRequest;
 import com.trazabilidad.ayni.permiso.dto.PermisoResponse;
 import com.trazabilidad.ayni.shared.dto.MessageResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,10 +15,13 @@ import java.util.List;
 
 /**
  * Controlador REST para la gestión de permisos.
+ * API Version 1
  */
 @RestController
-@RequestMapping("/api/permisos")
+@RequestMapping("/api/v1/permisos")
 @RequiredArgsConstructor
+@Tag(name = "Permisos (v1)", description = "Gestión de permisos del sistema - Versión 1")
+@SecurityRequirement(name = "bearerAuth")
 public class PermisoController {
 
     private final PermisoService permisoService;
