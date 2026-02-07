@@ -111,4 +111,62 @@ public final class Constants {
         public static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB en bytes
         public static final String[] ALLOWED_IMAGE_TYPES = { "image/jpeg", "image/jpg", "image/png", "image/gif" };
     }
+
+    /**
+     * Estados del sistema
+     */
+    public static final class Estados {
+        private Estados() {
+        }
+
+        // Estados comunes
+        public static final String PENDIENTE = "PENDIENTE";
+        public static final String EN_PROCESO = "EN_PROCESO";
+        public static final String COMPLETADO = "COMPLETADO";
+        public static final String CANCELADO = "CANCELADO";
+        public static final String FINALIZADO = "FINALIZADO";
+
+        // Estados específicos de tareas
+        public static final String EN_PROGRESO = "EN_PROGRESO";
+        public static final String COMPLETADA = "COMPLETADA";
+        public static final String BLOQUEADA = "BLOQUEADA";
+        public static final String CON_RETRASO = "CON_RETRASO";
+    }
+
+    /**
+     * Prioridades de tareas
+     */
+    public static final class Prioridades {
+        private Prioridades() {
+        }
+
+        public static final String ALTA = "ALTA";
+        public static final String MEDIA = "MEDIA";
+        public static final String BAJA = "BAJA";
+    }
+
+    /**
+     * Mensajes de error para transiciones de estado
+     */
+    public static final class StateTransitionMessages {
+        private StateTransitionMessages() {
+        }
+
+        public static final String INVALID_TRANSITION = "Transición de estado inválida";
+        public static final String TERMINAL_STATE = "El estado actual es terminal y no permite transiciones";
+        public static final String SEQUENTIAL_VIOLATION = "No se puede iniciar esta etapa hasta que la anterior esté completada";
+        public static final String TASK_INCOMPLETE = "No se puede completar la etapa hasta que todas las tareas estén completadas";
+    }
+
+    /**
+     * Valores por defecto para entidades
+     */
+    public static final class Defaults {
+        private Defaults() {
+        }
+
+        public static final String DEFAULT_COLOR_ETAPA = "#3B82F6"; // Azul
+        public static final int DEFAULT_PORCENTAJE_TAREA = 0;
+        public static final int PORCENTAJE_COMPLETADO = 100;
+    }
 }
