@@ -12,7 +12,9 @@ import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,11 +23,15 @@ import java.util.*;
 
 /**
  * Inicializador de datos por defecto.
- * Crea roles, permisos y usuario administrador al iniciar la aplicación.
+ * Solo se ejecuta cuando app.data-initializer.enabled=true (por defecto en
+ * desarrollo).
+ * En producción debe estar deshabilitado y las credenciales deben venir de
+ * variables de entorno.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = false)
 public class DataInitializer implements CommandLineRunner {
 
         private final PermisoRepository permisoRepository;
@@ -34,10 +40,18 @@ public class DataInitializer implements CommandLineRunner {
         private final ProcesoRepository procesoRepository;
         private final PasswordEncoder passwordEncoder;
 
+        @Value("${app.admin.username}")
+        private String adminUsername;
+
+        @Value("${app.admin.password}")
+        private String adminPassword;
+
         @Override
         @Transactional
         public void run(String... args) {
-                log.info("Iniciando carga de datos por defecto...");
+                log.info("========================================");
+                log.info("Inicializador de datos HABILITADO");
+                log.info("========================================");
 
                 if (permisoRepository.count() == 0) {
                         crearPermisos();
@@ -235,7 +249,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         private void crearUsuarioAdmin() {
-                log.info("Creando usuario administrador por defecto...");
+                log.info("Creando usuario administrador con credenciales desde configuración...");
 
                 Rol rolAdmin = rolRepository.findByNombre(Constants.Roles.ADMINISTRADOR)
                                 .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
@@ -244,8 +258,8 @@ public class DataInitializer implements CommandLineRunner {
                                 .nombre("Administrador")
                                 .apellido("Sistema")
                                 .email("admin@ayni.com")
-                                .username("admin")
-                                .password(passwordEncoder.encode("admin123"))
+                                .username(adminUsername)
+                                .password(passwordEncoder.encode(adminPassword))
                                 .telefono("999999999")
                                 .activo(true)
                                 .roles(new HashSet<>(Set.of(rolAdmin)))
@@ -254,7 +268,7 @@ public class DataInitializer implements CommandLineRunner {
                 usuarioRepository.save(admin);
                 rolAdmin.getUsuarios().add(admin);
 
-                log.info("Usuario administrador creado - username: admin, password: admin123");
+                log.info("Usuario administrador creado - username: {}", adminUsername);
                 log.warn("IMPORTANTE: Cambiar las credenciales del usuario admin en producción");
         }
 

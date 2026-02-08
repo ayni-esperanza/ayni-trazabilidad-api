@@ -1,0 +1,85 @@
+# ==================== CONFIGURACIÓN DE PRODUCCIÓN ====================
+# Activar con: SPRING_PROFILES_ACTIVE=prod
+# TODAS LAS VARIABLES DEBEN ESTAR DEFINIDAS EN VARIABLES DE ENTORNO
+
+spring:
+  # ==================== DATASOURCE PRODUCCIÓN ====================
+  datasource:
+    url: ${DATABASE_URL:#{null}} # Obligatorio via variable de entorno
+    username: ${DB_USERNAME:#{null}}
+    password: ${DB_PASSWORD:#{null}}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      connection-timeout: 20000
+      leak-detection-threshold: 15000
+
+  # ==================== JPA/HIBERNATE PRODUCCIÓN ====================
+  jpa:
+    hibernate:
+      ddl-auto: validate # SOLO validar, NUNCA modificar schema en producción
+    show-sql: false # No mostrar SQL en producción
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 50 # Mayor batch size para producción
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+
+  # ==================== FLYWAY HABILITADO EN PRODUCCIÓN ====================
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    out-of-order: false
+    placeholder-replacement: true
+
+# ==================== LOGGING PRODUCCIÓN ====================
+logging:
+  level:
+    root: WARN
+    com.trazabilidad.ayni: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: ${LOG_FILE:logs/ayni-trazabilidad.log}
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ==================== SWAGGER DESHABILITADO EN PRODUCCIÓN ====================
+springdoc:
+  swagger-ui:
+    enabled: false # Desactivar Swagger en producción por seguridad
+  api-docs:
+    enabled: false
+
+# ==================== ACTUATOR (Solo Health Check) ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health # Solo health check en producción
+  endpoint:
+    health:
+      show-details: never
+
+# ==================== DATA INITIALIZER ====================
+app:
+  data-initializer:
+    enabled: false # NUNCA cargar datos de prueba en producción
+  admin:
+    username: ${ADMIN_USERNAME:#{null}} # Obligatorio via variable de entorno
+    password: ${ADMIN_PASSWORD:#{null}} # Obligatorio via variable de entorno
+
+# ==================== SEGURIDAD ADICIONAL ====================
+server:
+  error:
+    include-message: never # No exponer mensajes de error detallados
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false

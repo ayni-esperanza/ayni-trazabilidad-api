@@ -1,0 +1,57 @@
+# ==================== CONFIGURACIÓN DE DESARROLLO ====================
+# Activar con: SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  # ==================== DATASOURCE DESARROLLO ====================
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ayni_trazabilidad}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
+
+  # ==================== JPA/HIBERNATE DESARROLLO ====================
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update} # Auto-generación de tablas para desarrollo
+    show-sql: ${SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true # SQL formateado para legibilidad
+
+  # ==================== FLYWAY DESHABILITADO EN DEV ====================
+  flyway:
+    enabled: false # No usar Flyway en desarrollo, permitir Hibernate gestionar schema
+
+# ==================== LOGGING DESARROLLO ====================
+logging:
+  level:
+    root: INFO
+    com.trazabilidad.ayni: ${LOG_LEVEL:DEBUG}
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# ==================== SWAGGER HABILITADO ====================
+springdoc:
+  swagger-ui:
+    enabled: true
+
+# ==================== ACTUATOR ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # Exponer todos los endpoints en desarrollo
+  endpoint:
+    health:
+      show-details: always
+
+# ==================== DATA INITIALIZER ====================
+app:
+  data-initializer:
+    enabled: true # Cargar datos de prueba en desarrollo
+  admin:
+    username: admin
+    password: admin123 # Password de desarrollo (OK aquí)

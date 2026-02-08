@@ -36,3 +36,14 @@ build/
 .env
 .env.local
 .env.*.local
+
+### Logs ###
+logs/
+*.log
+*.log.*
+spring.log*
+
+### Application Properties (only templates allowed) ###
+!.env.example
+application-local.yml
+application-local.properties
