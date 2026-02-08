@@ -4,6 +4,7 @@ import com.trazabilidad.ayni.auth.dto.AuthResponse;
 import com.trazabilidad.ayni.auth.dto.LoginRequest;
 import com.trazabilidad.ayni.auth.dto.RefreshTokenRequest;
 import com.trazabilidad.ayni.auth.dto.RegisterRequest;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,8 +33,10 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Autenticación exitosa", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @ApiResponse(responseCode = "429", description = "Demasiados intentos - Rate limit excedido")
     })
+    @RateLimiter(name = "authLimiter", fallbackMethod = "loginRateLimitFallback")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
@@ -44,8 +47,10 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "409", description = "Email o username ya registrado"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @ApiResponse(responseCode = "429", description = "Demasiados intentos - Rate limit excedido")
     })
+    @RateLimiter(name = "authLimiter", fallbackMethod = "registerRateLimitFallback")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
@@ -55,11 +60,39 @@ public class AuthController {
     @Operation(summary = "Refrescar token de acceso", description = "Genera un nuevo access token usando el refresh token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Token refrescado exitosamente", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado")
+            @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado"),
+            @ApiResponse(responseCode = "429", description = "Demasiados intentos - Rate limit excedido")
     })
+    @RateLimiter(name = "authLimiter", fallbackMethod = "refreshRateLimitFallback")
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
+    }
+
+    // ==================== FALLBACK METHODS PARA RATE LIMITING ====================
+
+    /**
+     * Método fallback cuando se excede el rate limit en login
+     */
+    public ResponseEntity<AuthResponse> loginRateLimitFallback(LoginRequest request, Exception ex) {
+        throw new com.trazabilidad.ayni.shared.exception.RateLimitExceededException(
+                "Demasiados intentos de inicio de sesión. Por favor, espera 1 minuto e inténtalo nuevamente.");
+    }
+
+    /**
+     * Método fallback cuando se excede el rate limit en register
+     */
+    public ResponseEntity<AuthResponse> registerRateLimitFallback(RegisterRequest request, Exception ex) {
+        throw new com.trazabilidad.ayni.shared.exception.RateLimitExceededException(
+                "Demasiados intentos de registro. Por favor, espera 1 minuto e inténtalo nuevamente.");
+    }
+
+    /**
+     * Método fallback cuando se excede el rate limit en refresh
+     */
+    public ResponseEntity<AuthResponse> refreshRateLimitFallback(RefreshTokenRequest request, Exception ex) {
+        throw new com.trazabilidad.ayni.shared.exception.RateLimitExceededException(
+                "Demasiados intentos de refresco de token. Por favor, espera 1 minuto e inténtalo nuevamente.");
     }
 }

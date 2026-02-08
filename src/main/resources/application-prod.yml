@@ -45,7 +45,9 @@ logging:
     root: WARN
     com.trazabilidad.ayni: INFO
     org.springframework.security: WARN
-    org.hibernate.SQL: WARN
+    org.hibernate: WARN # Deshabilitar todos los logs de Hibernate
+    org.hibernate.SQL: OFF # Completamente deshabilitado
+    org.hibernate.type.descriptor.sql.BasicBinder: OFF
   file:
     name: ${LOG_FILE:logs/ayni-trazabilidad.log}
   pattern:
@@ -75,6 +77,19 @@ app:
   admin:
     username: ${ADMIN_USERNAME:#{null}} # Obligatorio via variable de entorno
     password: ${ADMIN_PASSWORD:#{null}} # Obligatorio via variable de entorno
+
+# ==================== RATE LIMITING PRODUCCIÓN ====================
+resilience4j:
+  ratelimiter:
+    instances:
+      authLimiter:
+        limit-for-period: 3 # Solo 3 intentos por minuto en producción
+        limit-refresh-period: 1m
+        timeout-duration: 0s
+      apiLimiter:
+        limit-for-period: 60 # Máximo 60 requests por minuto
+        limit-refresh-period: 1m
+        timeout-duration: 0s
 
 # ==================== SEGURIDAD ADICIONAL ====================
 server:

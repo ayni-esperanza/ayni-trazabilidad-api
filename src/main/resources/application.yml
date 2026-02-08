@@ -87,3 +87,18 @@ app:
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:admin123}
+
+# ==================== RESILIENCE4J - RATE LIMITING ====================
+resilience4j:
+  ratelimiter:
+    instances:
+      authLimiter:
+        limit-for-period: ${RATE_LIMIT_AUTH:5}
+        limit-refresh-period: 1m
+        timeout-duration: 0s
+        register-health-indicator: true
+      apiLimiter:
+        limit-for-period: ${RATE_LIMIT_API:100}
+        limit-refresh-period: 1m
+        timeout-duration: 0s
+        register-health-indicator: true

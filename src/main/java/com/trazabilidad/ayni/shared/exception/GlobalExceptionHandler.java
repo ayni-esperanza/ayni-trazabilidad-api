@@ -218,6 +218,40 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
 
+        @ExceptionHandler(RateLimitExceededException.class)
+        public ResponseEntity<ErrorResponse> handleRateLimitExceeded(
+                        RateLimitExceededException ex,
+                        HttpServletRequest request) {
+                log.warn("Rate limit excedido en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                ErrorResponse error = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                                .error("Too Many Requests")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+        }
+
+        @ExceptionHandler(io.github.resilience4j.ratelimiter.RequestNotPermitted.class)
+        public ResponseEntity<ErrorResponse> handleRequestNotPermitted(
+                        io.github.resilience4j.ratelimiter.RequestNotPermitted ex,
+                        HttpServletRequest request) {
+                log.warn("Rate limit excedido por Resilience4j en {}", request.getRequestURI());
+
+                ErrorResponse error = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                                .error("Too Many Requests")
+                                .message("Has excedido el límite de solicitudes permitidas. Por favor, espera un momento e inténtalo nuevamente.")
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+        }
+
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ErrorResponse> handleGlobalException(
                         Exception ex,
