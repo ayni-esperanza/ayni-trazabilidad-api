@@ -2,6 +2,9 @@ package com.trazabilidad.ayni.config;
 
 import com.trazabilidad.ayni.permiso.Permiso;
 import com.trazabilidad.ayni.permiso.PermisoRepository;
+import com.trazabilidad.ayni.proceso.Etapa;
+import com.trazabilidad.ayni.proceso.Proceso;
+import com.trazabilidad.ayni.proceso.ProcesoRepository;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.rol.RolRepository;
 import com.trazabilidad.ayni.shared.util.Constants;
@@ -28,6 +31,7 @@ public class DataInitializer implements CommandLineRunner {
         private final PermisoRepository permisoRepository;
         private final RolRepository rolRepository;
         private final UsuarioRepository usuarioRepository;
+        private final ProcesoRepository procesoRepository;
         private final PasswordEncoder passwordEncoder;
 
         @Override
@@ -51,6 +55,12 @@ public class DataInitializer implements CommandLineRunner {
                         crearUsuarioAdmin();
                 } else {
                         log.info("Ya existen usuarios en el sistema");
+                        if (procesoRepository.count() == 0) {
+                                crearProcesos();
+                        } else {
+                                log.info("Los procesos ya existen, omitiendo creación");
+                        }
+
                 }
 
                 log.info("Carga de datos completada exitosamente");
@@ -246,5 +256,167 @@ public class DataInitializer implements CommandLineRunner {
 
                 log.info("Usuario administrador creado - username: admin, password: admin123");
                 log.warn("IMPORTANTE: Cambiar las credenciales del usuario admin en producción");
+        }
+
+        private void crearProcesos() {
+                log.info("Creando procesos por defecto...");
+
+                // Proceso 1: Construcción de Edificios
+                Proceso construccion = Proceso.builder()
+                                .nombre("Construcción de Edificios")
+                                .descripcion("Proceso completo para la construcción de edificios residenciales y comerciales")
+                                .area("Construcción")
+                                .activo(true)
+                                .etapas(new ArrayList<>())
+                                .build();
+
+                List<Etapa> etapasConstruccion = Arrays.asList(
+                                Etapa.builder()
+                                                .nombre("Planificación y Diseño")
+                                                .descripcion("Elaboración de planos y permisos de construcción")
+                                                .orden(1)
+                                                .color("#3B82F6")
+                                                .activo(true)
+                                                .proceso(construccion)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Cimentación")
+                                                .descripcion("Excavación y construcción de cimientos")
+                                                .orden(2)
+                                                .color("#10B981")
+                                                .activo(true)
+                                                .proceso(construccion)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Estructura")
+                                                .descripcion("Levantamiento de columnas, vigas y losas")
+                                                .orden(3)
+                                                .color("#F59E0B")
+                                                .activo(true)
+                                                .proceso(construccion)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Acabados")
+                                                .descripcion("Instalaciones eléctricas, sanitarias y acabados finales")
+                                                .orden(4)
+                                                .color("#8B5CF6")
+                                                .activo(true)
+                                                .proceso(construccion)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Entrega")
+                                                .descripcion("Inspección final y entrega al cliente")
+                                                .orden(5)
+                                                .color("#06B6D4")
+                                                .activo(true)
+                                                .proceso(construccion)
+                                                .build());
+
+                construccion.setEtapas(etapasConstruccion);
+                procesoRepository.save(construccion);
+
+                // Proceso 2: Desarrollo de Software
+                Proceso software = Proceso.builder()
+                                .nombre("Desarrollo de Software a Medida")
+                                .descripcion("Proceso ágil para desarrollo de aplicaciones personalizadas")
+                                .area("Tecnología")
+                                .activo(true)
+                                .etapas(new ArrayList<>())
+                                .build();
+
+                List<Etapa> etapasSoftware = Arrays.asList(
+                                Etapa.builder()
+                                                .nombre("Análisis de Requerimientos")
+                                                .descripcion("Levantamiento y documentación de requerimientos del cliente")
+                                                .orden(1)
+                                                .color("#3B82F6")
+                                                .activo(true)
+                                                .proceso(software)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Diseño")
+                                                .descripcion("Arquitectura de software y diseño de interfaces")
+                                                .orden(2)
+                                                .color("#10B981")
+                                                .activo(true)
+                                                .proceso(software)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Desarrollo")
+                                                .descripcion("Implementación del código y funcionalidades")
+                                                .orden(3)
+                                                .color("#F59E0B")
+                                                .activo(true)
+                                                .proceso(software)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Testing")
+                                                .descripcion("Pruebas funcionales, integración y UAT")
+                                                .orden(4)
+                                                .color("#EF4444")
+                                                .activo(true)
+                                                .proceso(software)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Deployment")
+                                                .descripcion("Despliegue en producción y capacitación")
+                                                .orden(5)
+                                                .color("#8B5CF6")
+                                                .activo(true)
+                                                .proceso(software)
+                                                .build());
+
+                software.setEtapas(etapasSoftware);
+                procesoRepository.save(software);
+
+                // Proceso 3: Instalación de Sistemas Eléctricos
+                Proceso electrico = Proceso.builder()
+                                .nombre("Instalación de Sistemas Eléctricos")
+                                .descripcion("Instalación y mantenimiento de sistemas eléctricos industriales")
+                                .area("Electricidad")
+                                .activo(true)
+                                .etapas(new ArrayList<>())
+                                .build();
+
+                List<Etapa> etapasElectrico = Arrays.asList(
+                                Etapa.builder()
+                                                .nombre("Inspección Inicial")
+                                                .descripcion("Evaluación del sitio y mediciones eléctricas")
+                                                .orden(1)
+                                                .color("#3B82F6")
+                                                .activo(true)
+                                                .proceso(electrico)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Instalación de Tableros")
+                                                .descripcion("Montaje de tableros eléctricos y protecciones")
+                                                .orden(2)
+                                                .color("#10B981")
+                                                .activo(true)
+                                                .proceso(electrico)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Cableado")
+                                                .descripcion("Tendido de cables y conexiones")
+                                                .orden(3)
+                                                .color("#F59E0B")
+                                                .activo(true)
+                                                .proceso(electrico)
+                                                .build(),
+                                Etapa.builder()
+                                                .nombre("Pruebas y Certificación")
+                                                .descripcion("Pruebas de continuidad, aislamiento y certificación")
+                                                .orden(4)
+                                                .color("#06B6D4")
+                                                .activo(true)
+                                                .proceso(electrico)
+                                                .build());
+
+                electrico.setEtapas(etapasElectrico);
+                procesoRepository.save(electrico);
+
+                log.info("Procesos creados: 3 (Construcción, Desarrollo Software, Sistemas Eléctricos)");
+                log.info("Total de etapas creadas: {}", etapasConstruccion.size() + etapasSoftware.size()
+                                + etapasElectrico.size());
         }
 }

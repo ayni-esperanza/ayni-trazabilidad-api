@@ -37,9 +37,12 @@ public final class Constants {
         public static final String PERMISOS = "permisos";
         public static final String SOLICITUDES = "solicitudes";
         public static final String PROCESOS = "procesos";
+        public static final String PROYECTOS = "proyectos";
         public static final String TAREAS = "tareas";
+        public static final String COSTOS = "costos";
         public static final String EVIDENCIAS = "evidencias";
         public static final String TABLERO = "tablero";
+        public static final String DASHBOARD = "dashboard";
         public static final String ESTADISTICAS = "estadisticas";
         public static final String REPORTES = "reportes";
         public static final String CONFIGURACION = "configuracion";

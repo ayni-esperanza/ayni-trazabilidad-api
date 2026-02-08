@@ -3,7 +3,7 @@ package com.trazabilidad.ayni.usuario;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.rol.RolRepository;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
-import com.trazabilidad.ayni.shared.exception.BadRequestException;
+
 import com.trazabilidad.ayni.shared.exception.DuplicateEntityException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.shared.util.Constants;
@@ -35,236 +35,236 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UsuarioService {
 
-    private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
-    private final UsuarioMapper usuarioMapper;
-    private final PasswordEncoder passwordEncoder;
+        private final UsuarioRepository usuarioRepository;
+        private final RolRepository rolRepository;
+        private final UsuarioMapper usuarioMapper;
+        private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Obtiene usuarios paginados con filtros opcionales
-     */
-    @Transactional(readOnly = true)
-    public PaginatedResponse<UsuarioResponse> obtenerUsuarios(
-            Integer page,
-            Integer size,
-            String search,
-            Long rolId) {
-        Pageable pageable = PageRequest.of(
-                page != null ? page : Constants.Pagination.DEFAULT_PAGE,
-                size != null ? size : Constants.Pagination.DEFAULT_SIZE,
-                Sort.by(Sort.Direction.ASC, "nombre"));
+        /**
+         * Obtiene usuarios paginados con filtros opcionales
+         */
+        @Transactional(readOnly = true)
+        public PaginatedResponse<UsuarioResponse> obtenerUsuarios(
+                        Integer page,
+                        Integer size,
+                        String search,
+                        Long rolId) {
+                Pageable pageable = PageRequest.of(
+                                page != null ? page : Constants.Pagination.DEFAULT_PAGE,
+                                size != null ? size : Constants.Pagination.DEFAULT_SIZE,
+                                Sort.by(Sort.Direction.ASC, "nombre"));
 
-        Page<Usuario> usuariosPage = usuarioRepository.buscarConFiltros(search, rolId, pageable);
+                Page<Usuario> usuariosPage = usuarioRepository.buscarConFiltros(search, rolId, pageable);
 
-        List<UsuarioResponse> content = usuariosPage.getContent().stream()
-                .map(usuarioMapper::toResponse)
-                .collect(Collectors.toList());
+                List<UsuarioResponse> content = usuariosPage.getContent().stream()
+                                .map(usuarioMapper::toResponse)
+                                .collect(Collectors.toList());
 
-        return PaginatedResponse.<UsuarioResponse>builder()
-                .content(content)
-                .totalElements(usuariosPage.getTotalElements())
-                .totalPages(usuariosPage.getTotalPages())
-                .page(usuariosPage.getNumber())
-                .size(usuariosPage.getSize())
-                .build();
-    }
-
-    /**
-     * Obtiene un usuario por ID
-     */
-    @Transactional(readOnly = true)
-    public UsuarioResponse obtenerUsuarioPorId(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
-
-        return usuarioMapper.toResponse(usuario);
-    }
-
-    /**
-     * Crea un nuevo usuario
-     */
-    public UsuarioCreacionResponse crearUsuario(UsuarioRequest request) {
-        log.info("Creando usuario con email: {}", request.getEmail());
-
-        // Validar que no exista el email
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEntityException("Usuario", "email", request.getEmail());
+                return PaginatedResponse.<UsuarioResponse>builder()
+                                .content(content)
+                                .totalElements(usuariosPage.getTotalElements())
+                                .totalPages(usuariosPage.getTotalPages())
+                                .page(usuariosPage.getNumber())
+                                .size(usuariosPage.getSize())
+                                .build();
         }
 
-        // Validar que no exista el username
-        if (usuarioRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateEntityException("Usuario", "username", request.getUsername());
+        /**
+         * Obtiene un usuario por ID
+         */
+        @Transactional(readOnly = true)
+        public UsuarioResponse obtenerUsuarioPorId(Long id) {
+                Usuario usuario = usuarioRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+
+                return usuarioMapper.toResponse(usuario);
         }
 
-        // Generar contraseña automáticamente si no se proporciona
-        String passwordPlano = request.getPassword();
-        if (passwordPlano == null || passwordPlano.trim().isEmpty()) {
-            passwordPlano = generarPasswordAutomatico(request.getNombre(), request.getApellido());
-            log.info("Contraseña generada automáticamente para usuario: {}", request.getUsername());
+        /**
+         * Crea un nuevo usuario
+         */
+        public UsuarioCreacionResponse crearUsuario(UsuarioRequest request) {
+                log.info("Creando usuario con email: {}", request.getEmail());
+
+                // Validar que no exista el email
+                if (usuarioRepository.existsByEmail(request.getEmail())) {
+                        throw new DuplicateEntityException("Usuario", "email", request.getEmail());
+                }
+
+                // Validar que no exista el username
+                if (usuarioRepository.existsByUsername(request.getUsername())) {
+                        throw new DuplicateEntityException("Usuario", "username", request.getUsername());
+                }
+
+                // Generar contraseña automáticamente si no se proporciona
+                String passwordPlano = request.getPassword();
+                if (passwordPlano == null || passwordPlano.trim().isEmpty()) {
+                        passwordPlano = generarPasswordAutomatico(request.getNombre(), request.getApellido());
+                        log.info("Contraseña generada automáticamente para usuario: {}", request.getUsername());
+                }
+
+                // Obtener el rol
+                Rol rol = rolRepository.findById(request.getRolId())
+                                .orElseThrow(() -> new EntityNotFoundException("Rol", request.getRolId()));
+
+                // Encriptar password
+                String passwordEncriptado = passwordEncoder.encode(passwordPlano);
+
+                // Crear entidad
+                Usuario usuario = usuarioMapper.toEntity(request, rol, passwordEncriptado);
+                usuario.agregarRol(rol);
+
+                // Guardar
+                Usuario usuarioGuardado = usuarioRepository.save(usuario);
+                log.info("Usuario creado exitosamente con ID: {}", usuarioGuardado.getId());
+
+                return UsuarioCreacionResponse.builder()
+                                .usuario(usuarioMapper.toResponse(usuarioGuardado))
+                                .passwordGenerado(passwordPlano)
+                                .build();
         }
 
-        // Obtener el rol
-        Rol rol = rolRepository.findById(request.getRolId())
-                .orElseThrow(() -> new EntityNotFoundException("Rol", request.getRolId()));
+        /**
+         * Genera una contraseña automática basada en el nombre y apellido
+         * Formato: PrimerasLetrasNombre + PrimerasLetrasApellido + Números aleatorios
+         * Ejemplo: Juan Pérez -> JuPe2847
+         */
+        private String generarPasswordAutomatico(String nombre, String apellido) {
+                SecureRandom random = new SecureRandom();
 
-        // Encriptar password
-        String passwordEncriptado = passwordEncoder.encode(passwordPlano);
+                // Obtener primeras 2 letras del nombre y apellido
+                String inicialesNombre = nombre.length() >= 2 ? nombre.substring(0, 2) : nombre;
+                String inicialesApellido = apellido.length() >= 2 ? apellido.substring(0, 2) : apellido;
 
-        // Crear entidad
-        Usuario usuario = usuarioMapper.toEntity(request, rol, passwordEncriptado);
-        usuario.agregarRol(rol);
+                // Capitalizar primera letra y minúscula segunda
+                inicialesNombre = inicialesNombre.substring(0, 1).toUpperCase() +
+                                inicialesNombre.substring(1).toLowerCase();
+                inicialesApellido = inicialesApellido.substring(0, 1).toUpperCase() +
+                                inicialesApellido.substring(1).toLowerCase();
 
-        // Guardar
-        Usuario usuarioGuardado = usuarioRepository.save(usuario);
-        log.info("Usuario creado exitosamente con ID: {}", usuarioGuardado.getId());
+                // Generar 4 números aleatorios
+                int numeros = 1000 + random.nextInt(9000); // Números entre 1000 y 9999
 
-        return UsuarioCreacionResponse.builder()
-                .usuario(usuarioMapper.toResponse(usuarioGuardado))
-                .passwordGenerado(passwordPlano)
-                .build();
-    }
-
-    /**
-     * Genera una contraseña automática basada en el nombre y apellido
-     * Formato: PrimerasLetrasNombre + PrimerasLetrasApellido + Números aleatorios
-     * Ejemplo: Juan Pérez -> JuPe2847
-     */
-    private String generarPasswordAutomatico(String nombre, String apellido) {
-        SecureRandom random = new SecureRandom();
-
-        // Obtener primeras 2 letras del nombre y apellido
-        String inicialesNombre = nombre.length() >= 2 ? nombre.substring(0, 2) : nombre;
-        String inicialesApellido = apellido.length() >= 2 ? apellido.substring(0, 2) : apellido;
-
-        // Capitalizar primera letra y minúscula segunda
-        inicialesNombre = inicialesNombre.substring(0, 1).toUpperCase() +
-                inicialesNombre.substring(1).toLowerCase();
-        inicialesApellido = inicialesApellido.substring(0, 1).toUpperCase() +
-                inicialesApellido.substring(1).toLowerCase();
-
-        // Generar 4 números aleatorios
-        int numeros = 1000 + random.nextInt(9000); // Números entre 1000 y 9999
-
-        return inicialesNombre + inicialesApellido + numeros;
-    }
-
-    /**
-     * Actualiza un usuario existente
-     */
-    public UsuarioResponse actualizarUsuario(Long id, UsuarioRequest request) {
-        log.info("Actualizando usuario con ID: {}", id);
-
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
-
-        // Validar email único (si cambió)
-        if (!usuario.getEmail().equals(request.getEmail()) &&
-                usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEntityException("Usuario", "email", request.getEmail());
+                return inicialesNombre + inicialesApellido + numeros;
         }
 
-        // Validar username único (si cambió)
-        if (!usuario.getUsername().equals(request.getUsername()) &&
-                usuarioRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateEntityException("Usuario", "username", request.getUsername());
+        /**
+         * Actualiza un usuario existente
+         */
+        public UsuarioResponse actualizarUsuario(Long id, UsuarioRequest request) {
+                log.info("Actualizando usuario con ID: {}", id);
+
+                Usuario usuario = usuarioRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+
+                // Validar email único (si cambió)
+                if (!usuario.getEmail().equals(request.getEmail()) &&
+                                usuarioRepository.existsByEmail(request.getEmail())) {
+                        throw new DuplicateEntityException("Usuario", "email", request.getEmail());
+                }
+
+                // Validar username único (si cambió)
+                if (!usuario.getUsername().equals(request.getUsername()) &&
+                                usuarioRepository.existsByUsername(request.getUsername())) {
+                        throw new DuplicateEntityException("Usuario", "username", request.getUsername());
+                }
+
+                // Obtener el rol
+                Rol rol = rolRepository.findById(request.getRolId())
+                                .orElseThrow(() -> new EntityNotFoundException("Rol", request.getRolId()));
+
+                // Actualizar password si se proporcionó
+                if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+                        String passwordEncriptado = passwordEncoder.encode(request.getPassword());
+                        usuario.setPassword(passwordEncriptado);
+                }
+
+                // Actualizar datos
+                usuarioMapper.updateEntity(usuario, request, rol);
+
+                Usuario usuarioActualizado = usuarioRepository.save(usuario);
+                log.info("Usuario actualizado exitosamente con ID: {}", id);
+
+                return usuarioMapper.toResponse(usuarioActualizado);
         }
 
-        // Obtener el rol
-        Rol rol = rolRepository.findById(request.getRolId())
-                .orElseThrow(() -> new EntityNotFoundException("Rol", request.getRolId()));
+        /**
+         * Elimina lógicamente un usuario
+         */
+        public void eliminarUsuario(Long id) {
+                log.info("Eliminando (lógicamente) usuario con ID: {}", id);
 
-        // Actualizar password si se proporcionó
-        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            String passwordEncriptado = passwordEncoder.encode(request.getPassword());
-            usuario.setPassword(passwordEncriptado);
+                Usuario usuario = usuarioRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+
+                // Borrado lógico
+                usuario.setActivo(false);
+                usuarioRepository.save(usuario);
+
+                log.info("Usuario eliminado exitosamente con ID: {}", id);
         }
 
-        // Actualizar datos
-        usuarioMapper.updateEntity(usuario, request, rol);
+        /**
+         * Cambia el estado activo/inactivo de un usuario
+         */
+        public UsuarioResponse cambiarEstado(Long id, Boolean activo) {
+                log.info("Cambiando estado del usuario ID {} a: {}", id, activo);
 
-        Usuario usuarioActualizado = usuarioRepository.save(usuario);
-        log.info("Usuario actualizado exitosamente con ID: {}", id);
+                Usuario usuario = usuarioRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
 
-        return usuarioMapper.toResponse(usuarioActualizado);
-    }
+                usuario.setActivo(activo);
+                Usuario usuarioActualizado = usuarioRepository.save(usuario);
 
-    /**
-     * Elimina lógicamente un usuario
-     */
-    public void eliminarUsuario(Long id) {
-        log.info("Eliminando (lógicamente) usuario con ID: {}", id);
+                log.info("Estado cambiado exitosamente para usuario ID: {}", id);
+                return usuarioMapper.toResponse(usuarioActualizado);
+        }
 
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+        /**
+         * Obtiene estadísticas de usuarios
+         */
+        @Transactional(readOnly = true)
+        public EstadisticasUsuariosResponse obtenerEstadisticas() {
+                log.debug("Obteniendo estadísticas de usuarios");
 
-        // Borrado lógico
-        usuario.setActivo(false);
-        usuarioRepository.save(usuario);
+                Long totalUsuarios = usuarioRepository.count();
+                Long usuariosActivos = usuarioRepository.countByActivoTrue();
 
-        log.info("Usuario eliminado exitosamente con ID: {}", id);
-    }
+                // Contar administradores y gerentes
+                Long administradores = usuarioRepository.countByRolesNombreIn(
+                                Arrays.asList(Constants.Roles.ADMINISTRADOR, Constants.Roles.GERENTE));
 
-    /**
-     * Cambia el estado activo/inactivo de un usuario
-     */
-    public UsuarioResponse cambiarEstado(Long id, Boolean activo) {
-        log.info("Cambiando estado del usuario ID {} a: {}", id, activo);
+                // Contar ingenieros y ayudantes
+                Long ingenieros = usuarioRepository.countByRolesNombreIn(
+                                Arrays.asList(Constants.Roles.INGENIERO, Constants.Roles.AYUDANTE));
 
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+                return EstadisticasUsuariosResponse.builder()
+                                .totalUsuarios(totalUsuarios)
+                                .usuariosActivos(usuariosActivos)
+                                .administradores(administradores)
+                                .ingenieros(ingenieros)
+                                .build();
+        }
 
-        usuario.setActivo(activo);
-        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+        /**
+         * Busca usuario por email
+         */
+        @Transactional(readOnly = true)
+        public UsuarioResponse buscarPorEmail(String email) {
+                Usuario usuario = usuarioRepository.findByEmail(email)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", "email", email));
 
-        log.info("Estado cambiado exitosamente para usuario ID: {}", id);
-        return usuarioMapper.toResponse(usuarioActualizado);
-    }
+                return usuarioMapper.toResponse(usuario);
+        }
 
-    /**
-     * Obtiene estadísticas de usuarios
-     */
-    @Transactional(readOnly = true)
-    public EstadisticasUsuariosResponse obtenerEstadisticas() {
-        log.debug("Obteniendo estadísticas de usuarios");
+        /**
+         * Busca usuario por username
+         */
+        @Transactional(readOnly = true)
+        public UsuarioResponse buscarPorUsername(String username) {
+                Usuario usuario = usuarioRepository.findByUsername(username)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", "username", username));
 
-        Long totalUsuarios = usuarioRepository.count();
-        Long usuariosActivos = usuarioRepository.countByActivoTrue();
-
-        // Contar administradores y gerentes
-        Long administradores = usuarioRepository.countByRolesNombreIn(
-                Arrays.asList(Constants.Roles.ADMINISTRADOR, Constants.Roles.GERENTE));
-
-        // Contar ingenieros y ayudantes
-        Long ingenieros = usuarioRepository.countByRolesNombreIn(
-                Arrays.asList(Constants.Roles.INGENIERO, Constants.Roles.AYUDANTE));
-
-        return EstadisticasUsuariosResponse.builder()
-                .totalUsuarios(totalUsuarios)
-                .usuariosActivos(usuariosActivos)
-                .administradores(administradores)
-                .ingenieros(ingenieros)
-                .build();
-    }
-
-    /**
-     * Busca usuario por email
-     */
-    @Transactional(readOnly = true)
-    public UsuarioResponse buscarPorEmail(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", "email", email));
-
-        return usuarioMapper.toResponse(usuario);
-    }
-
-    /**
-     * Busca usuario por username
-     */
-    @Transactional(readOnly = true)
-    public UsuarioResponse buscarPorUsername(String username) {
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", "username", username));
-
-        return usuarioMapper.toResponse(usuario);
-    }
+                return usuarioMapper.toResponse(usuario);
+        }
 }
