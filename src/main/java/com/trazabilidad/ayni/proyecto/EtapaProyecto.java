@@ -1,10 +1,12 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.trazabilidad.ayni.proceso.Etapa;
 import com.trazabilidad.ayni.shared.enums.EstadoEtapaProyecto;
 import com.trazabilidad.ayni.shared.exception.BadStateTransitionException;
 import com.trazabilidad.ayni.shared.util.Auditable;
+import com.trazabilidad.ayni.tarea.Tarea;
 import com.trazabilidad.ayni.usuario.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +20,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidad que representa una Etapa concreta dentro de un Proyecto.
@@ -78,6 +82,11 @@ public class EtapaProyecto extends Auditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsable_id")
     private Usuario responsable;
+
+    @OneToMany(mappedBy = "etapaProyecto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<Tarea> tareas = new ArrayList<>();
 
     /**
      * Helper method para cambiar el estado de la etapa.

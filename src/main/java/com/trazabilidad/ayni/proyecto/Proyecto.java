@@ -1,5 +1,9 @@
 package com.trazabilidad.ayni.proyecto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.trazabilidad.ayni.costo.CostoAdicional;
+import com.trazabilidad.ayni.costo.CostoManoObra;
+import com.trazabilidad.ayni.costo.CostoMaterial;
 import com.trazabilidad.ayni.proceso.Proceso;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.exception.BadStateTransitionException;
@@ -100,6 +104,22 @@ public class Proyecto extends Auditable {
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<EtapaProyecto> etapasProyecto = new ArrayList<>();
+
+    // Relaciones con Costos (para navegación bidireccional)
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<CostoMaterial> costosMaterial = new ArrayList<>();
+
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<CostoManoObra> costosManoObra = new ArrayList<>();
+
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<CostoAdicional> costosAdicionales = new ArrayList<>();
 
     /**
      * Helper method para cambiar el estado del proyecto.
