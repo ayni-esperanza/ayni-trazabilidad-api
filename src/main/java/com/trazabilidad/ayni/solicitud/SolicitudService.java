@@ -12,11 +12,15 @@ import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Servicio para gestionar solicitudes.
@@ -27,161 +31,200 @@ import java.time.LocalDate;
 @Transactional
 public class SolicitudService {
 
-    private final SolicitudRepository solicitudRepository;
-    private final UsuarioRepository usuarioRepository;
+        private final SolicitudRepository solicitudRepository;
+        private final UsuarioRepository usuarioRepository;
 
-    /**
-     * Lista solicitudes con filtros opcionales y paginación.
-     */
-    @Transactional(readOnly = true)
-    public PaginatedResponse<SolicitudResponse> listar(
-            String search,
-            EstadoSolicitud estado,
-            Long responsableId,
-            LocalDate fechaDesde,
-            LocalDate fechaHasta,
-            Pageable pageable) {
-        Page<Solicitud> page = solicitudRepository.buscarConFiltros(
-                search, estado, responsableId, fechaDesde, fechaHasta, pageable);
+        // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
+        private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
+                {
+                        put("id", "id");
+                        put("nombreProyecto", "nombre_proyecto");
+                        put("cliente", "cliente");
+                        put("descripcion", "descripcion");
+                        put("estado", "estado");
+                        put("fechaSolicitud", "fecha_solicitud");
+                        put("fechaCreacion", "fecha_creacion");
+                        put("fechaActualizacion", "fecha_actualizacion");
+                        put("responsableId", "responsable_id");
+                }
+        };
 
-        return PaginatedResponse.<SolicitudResponse>builder()
-                .content(page.getContent().stream()
-                        .map(SolicitudMapper::toResponse)
-                        .toList())
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .build();
-    }
+        /**
+         * Convierte un Pageable con nombres de propiedades Java a nombres de columnas
+         * SQL.
+         */
+        private Pageable translatePageable(Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        return pageable;
+                }
 
-    /**
-     * Obtiene una solicitud por su ID.
-     */
-    @Transactional(readOnly = true)
-    public SolicitudResponse obtenerPorId(Long id) {
-        Solicitud solicitud = solicitudRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+                Sort translatedSort = Sort.by(
+                                pageable.getSort().stream()
+                                                .map(order -> {
+                                                        String columnName = PROPERTY_TO_COLUMN_MAP.getOrDefault(
+                                                                        order.getProperty(), order.getProperty());
+                                                        return order.isAscending()
+                                                                        ? Sort.Order.asc(columnName)
+                                                                        : Sort.Order.desc(columnName);
+                                                })
+                                                .toList());
 
-        return SolicitudMapper.toResponse(solicitud);
-    }
-
-    /**
-     * Crea una nueva solicitud.
-     * Valida que el responsable exista y previene duplicados.
-     */
-    public SolicitudResponse crear(SolicitudRequest request) {
-        Usuario responsable = usuarioRepository.findById(request.getResponsableId())
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
-
-        boolean existeDuplicado = solicitudRepository.existsByNombreProyectoAndClienteAndEstadoNot(
-                request.getNombreProyecto(),
-                request.getCliente(),
-                EstadoSolicitud.CANCELADO);
-
-        if (existeDuplicado) {
-            throw new BadRequestException(
-                    "Ya existe una solicitud activa con el mismo nombre de proyecto y cliente");
+                return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), translatedSort);
         }
 
-        Solicitud solicitud = SolicitudMapper.toEntity(request, responsable);
-        Solicitud saved = solicitudRepository.save(solicitud);
+        /**
+         * Lista solicitudes con filtros opcionales y paginación.
+         */
+        @Transactional(readOnly = true)
+        public PaginatedResponse<SolicitudResponse> listar(
+                        String search,
+                        EstadoSolicitud estado,
+                        Long responsableId,
+                        LocalDate fechaDesde,
+                        LocalDate fechaHasta,
+                        Pageable pageable) {
+                Pageable translatedPageable = translatePageable(pageable);
+                Page<Solicitud> page = solicitudRepository.buscarConFiltros(
+                                search, estado, responsableId, fechaDesde, fechaHasta, translatedPageable);
 
-        return SolicitudMapper.toResponse(saved);
-    }
-
-    /**
-     * Actualiza una solicitud existente.
-     * Solo permite actualización si el estado es PENDIENTE.
-     */
-    public SolicitudResponse actualizar(Long id, SolicitudRequest request) {
-        Solicitud solicitud = solicitudRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
-
-        if (!solicitud.esEditable()) {
-            throw new BadRequestException(
-                    "Solo se pueden editar solicitudes en estado PENDIENTE");
+                return PaginatedResponse.<SolicitudResponse>builder()
+                                .content(page.getContent().stream()
+                                                .map(SolicitudMapper::toResponse)
+                                                .toList())
+                                .page(page.getNumber())
+                                .size(page.getSize())
+                                .totalElements(page.getTotalElements())
+                                .totalPages(page.getTotalPages())
+                                .build();
         }
 
-        Usuario responsable = usuarioRepository.findById(request.getResponsableId())
-                .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
+        /**
+         * Obtiene una solicitud por su ID.
+         */
+        @Transactional(readOnly = true)
+        public SolicitudResponse obtenerPorId(Long id) {
+                Solicitud solicitud = solicitudRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
 
-        if (!solicitud.getNombreProyecto().equals(request.getNombreProyecto()) ||
-                !solicitud.getCliente().equals(request.getCliente())) {
-
-            boolean existeDuplicado = solicitudRepository.existsByNombreProyectoAndClienteAndEstadoNot(
-                    request.getNombreProyecto(),
-                    request.getCliente(),
-                    EstadoSolicitud.CANCELADO);
-
-            if (existeDuplicado) {
-                throw new BadRequestException(
-                        "Ya existe una solicitud activa con el mismo nombre de proyecto y cliente");
-            }
+                return SolicitudMapper.toResponse(solicitud);
         }
 
-        SolicitudMapper.updateEntity(solicitud, request, responsable);
-        Solicitud updated = solicitudRepository.save(solicitud);
+        /**
+         * Crea una nueva solicitud.
+         * Valida que el responsable exista y previene duplicados.
+         */
+        public SolicitudResponse crear(SolicitudRequest request) {
+                Usuario responsable = usuarioRepository.findById(request.getResponsableId())
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
 
-        return SolicitudMapper.toResponse(updated);
-    }
+                boolean existeDuplicado = solicitudRepository.existsByNombreProyectoAndClienteAndEstadoNot(
+                                request.getNombreProyecto(),
+                                request.getCliente(),
+                                EstadoSolicitud.CANCELADO);
 
-    /**
-     * Cambia el estado de una solicitud.
-     * Valida las transiciones permitidas a través del enum.
-     */
-    public SolicitudResponse cambiarEstado(Long id, CambiarEstadoRequest request) {
-        Solicitud solicitud = solicitudRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+                if (existeDuplicado) {
+                        throw new BadRequestException(
+                                        "Ya existe una solicitud activa con el mismo nombre de proyecto y cliente");
+                }
 
-        EstadoSolicitud nuevoEstado;
-        try {
-            nuevoEstado = EstadoSolicitud.valueOf(request.getNuevoEstado());
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Estado inválido: " + request.getNuevoEstado());
+                Solicitud solicitud = SolicitudMapper.toEntity(request, responsable);
+                Solicitud saved = solicitudRepository.save(solicitud);
+
+                return SolicitudMapper.toResponse(saved);
         }
 
-        solicitud.cambiarEstado(nuevoEstado);
-        Solicitud updated = solicitudRepository.save(solicitud);
+        /**
+         * Actualiza una solicitud existente.
+         * Solo permite actualización si el estado es PENDIENTE.
+         */
+        public SolicitudResponse actualizar(Long id, SolicitudRequest request) {
+                Solicitud solicitud = solicitudRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
 
-        return SolicitudMapper.toResponse(updated);
-    }
+                if (!solicitud.esEditable()) {
+                        throw new BadRequestException(
+                                        "Solo se pueden editar solicitudes en estado PENDIENTE");
+                }
 
-    /**
-     * Elimina una solicitud.
-     * Solo permite eliminación si el estado es PENDIENTE.
-     */
-    public void eliminar(Long id) {
-        Solicitud solicitud = solicitudRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+                Usuario responsable = usuarioRepository.findById(request.getResponsableId())
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
 
-        if (!solicitud.esEditable()) {
-            throw new BadRequestException(
-                    "Solo se pueden eliminar solicitudes en estado PENDIENTE");
+                if (!solicitud.getNombreProyecto().equals(request.getNombreProyecto()) ||
+                                !solicitud.getCliente().equals(request.getCliente())) {
+
+                        boolean existeDuplicado = solicitudRepository.existsByNombreProyectoAndClienteAndEstadoNot(
+                                        request.getNombreProyecto(),
+                                        request.getCliente(),
+                                        EstadoSolicitud.CANCELADO);
+
+                        if (existeDuplicado) {
+                                throw new BadRequestException(
+                                                "Ya existe una solicitud activa con el mismo nombre de proyecto y cliente");
+                        }
+                }
+
+                SolicitudMapper.updateEntity(solicitud, request, responsable);
+                Solicitud updated = solicitudRepository.save(solicitud);
+
+                return SolicitudMapper.toResponse(updated);
         }
 
-        solicitudRepository.delete(solicitud);
-    }
+        /**
+         * Cambia el estado de una solicitud.
+         * Valida las transiciones permitidas a través del enum.
+         */
+        public SolicitudResponse cambiarEstado(Long id, CambiarEstadoRequest request) {
+                Solicitud solicitud = solicitudRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
 
-    /**
-     * Obtiene estadísticas de solicitudes agrupadas por estado.
-     */
-    @Transactional(readOnly = true)
-    public EstadisticasSolicitudResponse obtenerEstadisticas() {
-        long total = solicitudRepository.count();
-        long pendientes = solicitudRepository.countByEstado(EstadoSolicitud.PENDIENTE);
-        long enProceso = solicitudRepository.countByEstado(EstadoSolicitud.EN_PROCESO);
-        long completadas = solicitudRepository.countByEstado(EstadoSolicitud.COMPLETADO);
-        long canceladas = solicitudRepository.countByEstado(EstadoSolicitud.CANCELADO);
-        long finalizadas = solicitudRepository.countByEstado(EstadoSolicitud.FINALIZADO);
+                EstadoSolicitud nuevoEstado;
+                try {
+                        nuevoEstado = EstadoSolicitud.valueOf(request.getNuevoEstado());
+                } catch (IllegalArgumentException e) {
+                        throw new BadRequestException("Estado inválido: " + request.getNuevoEstado());
+                }
 
-        return EstadisticasSolicitudResponse.builder()
-                .totalSolicitudes(total)
-                .pendientes(pendientes)
-                .enProceso(enProceso)
-                .completadas(completadas)
-                .canceladas(canceladas)
-                .finalizadas(finalizadas)
-                .build();
-    }
+                solicitud.cambiarEstado(nuevoEstado);
+                Solicitud updated = solicitudRepository.save(solicitud);
+
+                return SolicitudMapper.toResponse(updated);
+        }
+
+        /**
+         * Elimina una solicitud.
+         * Solo permite eliminación si el estado es PENDIENTE.
+         */
+        public void eliminar(Long id) {
+                Solicitud solicitud = solicitudRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+
+                if (!solicitud.esEditable()) {
+                        throw new BadRequestException(
+                                        "Solo se pueden eliminar solicitudes en estado PENDIENTE");
+                }
+
+                solicitudRepository.delete(solicitud);
+        }
+
+        /**
+         * Obtiene estadísticas de solicitudes agrupadas por estado.
+         */
+        @Transactional(readOnly = true)
+        public EstadisticasSolicitudResponse obtenerEstadisticas() {
+                long total = solicitudRepository.count();
+                long pendientes = solicitudRepository.countByEstado(EstadoSolicitud.PENDIENTE);
+                long enProceso = solicitudRepository.countByEstado(EstadoSolicitud.EN_PROCESO);
+                long completadas = solicitudRepository.countByEstado(EstadoSolicitud.COMPLETADO);
+                long canceladas = solicitudRepository.countByEstado(EstadoSolicitud.CANCELADO);
+                long finalizadas = solicitudRepository.countByEstado(EstadoSolicitud.FINALIZADO);
+
+                return EstadisticasSolicitudResponse.builder()
+                                .totalSolicitudes(total)
+                                .pendientes(pendientes)
+                                .enProceso(enProceso)
+                                .completadas(completadas)
+                                .canceladas(canceladas)
+                                .finalizadas(finalizadas)
+                                .build();
+        }
 }

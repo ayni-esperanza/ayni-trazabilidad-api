@@ -15,7 +15,9 @@ import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,46 @@ public class TareaService {
     private final EtapaProyectoRepository etapaProyectoRepository;
     private final UsuarioRepository usuarioRepository;
 
+    // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
+    private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
+        {
+            put("id", "id");
+            put("titulo", "titulo");
+            put("descripcion", "descripcion");
+            put("estado", "estado");
+            put("prioridad", "prioridad");
+            put("fechaInicio", "fecha_inicio");
+            put("fechaFin", "fecha_fin");
+            put("fechaCreacion", "fecha_creacion");
+            put("fechaActualizacion", "fecha_actualizacion");
+            put("etapaProyectoId", "etapa_proyecto_id");
+            put("responsableId", "responsable_id");
+        }
+    };
+
+    /**
+     * Convierte un Pageable con nombres de propiedades Java a nombres de columnas
+     * SQL.
+     */
+    private Pageable translatePageable(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+
+        Sort translatedSort = Sort.by(
+                pageable.getSort().stream()
+                        .map(order -> {
+                            String columnName = PROPERTY_TO_COLUMN_MAP.getOrDefault(order.getProperty(),
+                                    order.getProperty());
+                            return order.isAscending()
+                                    ? Sort.Order.asc(columnName)
+                                    : Sort.Order.desc(columnName);
+                        })
+                        .toList());
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), translatedSort);
+    }
+
     /**
      * Lista tareas con filtros opcionales y paginación.
      */
@@ -47,8 +89,9 @@ public class TareaService {
             Long responsableId,
             Long proyectoId,
             Pageable pageable) {
+        Pageable translatedPageable = translatePageable(pageable);
         Page<Tarea> page = tareaRepository.buscarConFiltros(
-                search, estado, prioridad, responsableId, proyectoId, pageable);
+                search, estado, prioridad, responsableId, proyectoId, translatedPageable);
 
         return PaginatedResponse.<TareaResponse>builder()
                 .content(page.getContent().stream()

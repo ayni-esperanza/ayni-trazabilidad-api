@@ -16,63 +16,76 @@ import java.util.List;
  * Incluye filtrado dinámico con JpaSpecificationExecutor.
  */
 public interface SolicitudRepository extends JpaRepository<Solicitud, Long>,
-        JpaSpecificationExecutor<Solicitud> {
+                JpaSpecificationExecutor<Solicitud> {
 
-    /**
-     * Busca solicitudes con filtros opcionales.
-     *
-     * @param search        Búsqueda en nombreProyecto, cliente o descripción
-     * @param estado        Estado de la solicitud (opcional)
-     * @param responsableId ID del responsable (opcional)
-     * @param desde         Fecha desde (opcional)
-     * @param hasta         Fecha hasta (opcional)
-     * @param pageable      Paginación
-     * @return Página de solicitudes
-     */
-    @Query("SELECT s FROM Solicitud s " +
-            "WHERE (:search IS NULL OR " +
-            "      LOWER(s.nombreProyecto) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "      LOWER(s.cliente) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "      LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "  AND (:estado IS NULL OR s.estado = :estado) " +
-            "  AND (:responsableId IS NULL OR s.responsable.id = :responsableId) " +
-            "  AND (:desde IS NULL OR s.fechaSolicitud >= :desde) " +
-            "  AND (:hasta IS NULL OR s.fechaSolicitud <= :hasta)")
-    Page<Solicitud> buscarConFiltros(
-            @Param("search") String search,
-            @Param("estado") EstadoSolicitud estado,
-            @Param("responsableId") Long responsableId,
-            @Param("desde") LocalDate desde,
-            @Param("hasta") LocalDate hasta,
-            Pageable pageable);
+        /**
+         * Busca solicitudes con filtros opcionales.
+         * Usa SQL nativo con CAST para evitar el error "lower(bytea)" en PostgreSQL.
+         *
+         * @param search        Búsqueda en nombreProyecto, cliente o descripción
+         * @param estado        Estado de la solicitud (opcional)
+         * @param responsableId ID del responsable (opcional)
+         * @param desde         Fecha desde (opcional)
+         * @param hasta         Fecha hasta (opcional)
+         * @param pageable      Paginación
+         * @return Página de solicitudes
+         */
+        @Query(value = "SELECT * FROM solicitudes s " +
+                        "WHERE (CAST(:search AS text) IS NULL OR " +
+                        "      LOWER(s.nombre_proyecto) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
+                        "      LOWER(s.cliente) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
+                        "      LOWER(s.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) " +
+                        "  AND (CAST(:estado AS text) IS NULL OR s.estado = CAST(:estado AS text)) " +
+                        "  AND (:responsableId IS NULL OR s.responsable_id = :responsableId) " +
+                        "  AND (:desde IS NULL OR s.fecha_solicitud >= :desde) " +
+                        "  AND (:hasta IS NULL OR s.fecha_solicitud <= :hasta)", countQuery = "SELECT COUNT(*) FROM solicitudes s "
+                                        +
+                                        "WHERE (CAST(:search AS text) IS NULL OR " +
+                                        "      LOWER(s.nombre_proyecto) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR "
+                                        +
+                                        "      LOWER(s.cliente) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR "
+                                        +
+                                        "      LOWER(s.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) "
+                                        +
+                                        "  AND (CAST(:estado AS text) IS NULL OR s.estado = CAST(:estado AS text)) " +
+                                        "  AND (:responsableId IS NULL OR s.responsable_id = :responsableId) " +
+                                        "  AND (:desde IS NULL OR s.fecha_solicitud >= :desde) " +
+                                        "  AND (:hasta IS NULL OR s.fecha_solicitud <= :hasta)", nativeQuery = true)
+        Page<Solicitud> buscarConFiltros(
+                        @Param("search") String search,
+                        @Param("estado") EstadoSolicitud estado,
+                        @Param("responsableId") Long responsableId,
+                        @Param("desde") LocalDate desde,
+                        @Param("hasta") LocalDate hasta,
+                        Pageable pageable);
 
-    /**
-     * Cuenta solicitudes por estado.
-     */
-    long countByEstado(EstadoSolicitud estado);
+        /**
+         * Cuenta solicitudes por estado.
+         */
+        long countByEstado(EstadoSolicitud estado);
 
-    /**
-     * Busca solicitudes por responsable.
-     */
-    List<Solicitud> findByResponsableId(Long responsableId);
+        /**
+         * Busca solicitudes por responsable.
+         */
+        List<Solicitud> findByResponsableId(Long responsableId);
 
-    /**
-     * Verifica si existe una solicitud duplicada.
-     * Previene duplicados con mismo nombre de proyecto, cliente y estado !=
-     * CANCELADO.
-     */
-    boolean existsByNombreProyectoAndClienteAndEstadoNot(
-            String nombreProyecto,
-            String cliente,
-            EstadoSolicitud estado);
+        /**
+         * Verifica si existe una solicitud duplicada.
+         * Previene duplicados con mismo nombre de proyecto, cliente y estado !=
+         * CANCELADO.
+         */
+        boolean existsByNombreProyectoAndClienteAndEstadoNot(
+                        String nombreProyecto,
+                        String cliente,
+                        EstadoSolicitud estado);
 
-    /**
-     * Cuenta solicitudes por responsable.
-     */
-    long countByResponsableId(Long responsableId);
+        /**
+         * Cuenta solicitudes por responsable.
+         */
+        long countByResponsableId(Long responsableId);
 
-    /**
-     * Busca solicitudes por estado.
-     */
-    List<Solicitud> findByEstado(EstadoSolicitud estado);
+        /**
+         * Busca solicitudes por estado.
+         */
+        List<Solicitud> findByEstado(EstadoSolicitud estado);
 }

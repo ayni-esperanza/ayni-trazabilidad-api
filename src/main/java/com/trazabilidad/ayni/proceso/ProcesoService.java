@@ -7,11 +7,15 @@ import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Servicio para gestión de Procesos y sus Etapas.
@@ -24,6 +28,42 @@ import java.util.List;
 public class ProcesoService {
 
     private final ProcesoRepository procesoRepository;
+
+    // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
+    private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
+        {
+            put("id", "id");
+            put("nombre", "nombre");
+            put("descripcion", "descripcion");
+            put("area", "area");
+            put("activo", "activo");
+            put("fechaCreacion", "fecha_creacion");
+            put("fechaActualizacion", "fecha_actualizacion");
+        }
+    };
+
+    /**
+     * Convierte un Pageable con nombres de propiedades Java a nombres de columnas
+     * SQL.
+     */
+    private Pageable translatePageable(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+
+        Sort translatedSort = Sort.by(
+                pageable.getSort().stream()
+                        .map(order -> {
+                            String columnName = PROPERTY_TO_COLUMN_MAP.getOrDefault(order.getProperty(),
+                                    order.getProperty());
+                            return order.isAscending()
+                                    ? Sort.Order.asc(columnName)
+                                    : Sort.Order.desc(columnName);
+                        })
+                        .toList());
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), translatedSort);
+    }
 
     /**
      * Lista procesos con filtros opcionales y paginación.
@@ -44,7 +84,8 @@ public class ProcesoService {
         log.debug("Listando procesos con filtros - search: {}, area: {}, activo: {}",
                 search, area, activo);
 
-        Page<Proceso> page = procesoRepository.buscarConFiltros(search, area, activo, pageable);
+        Pageable translatedPageable = translatePageable(pageable);
+        Page<Proceso> page = procesoRepository.buscarConFiltros(search, area, activo, translatedPageable);
 
         List<ProcesoResponse> content = page.getContent().stream()
                 .map(ProcesoMapper::toResponse)
