@@ -18,73 +18,82 @@ import java.util.Optional;
 @Repository
 public interface ProcesoRepository extends JpaRepository<Proceso, Long>, JpaSpecificationExecutor<Proceso> {
 
-    /**
-     * Busca un proceso por su nombre exacto.
-     *
-     * @param nombre Nombre del proceso
-     * @return Optional con el proceso si existe
-     */
-    Optional<Proceso> findByNombre(String nombre);
+        /**
+         * Busca un proceso por su nombre exacto.
+         *
+         * @param nombre Nombre del proceso
+         * @return Optional con el proceso si existe
+         */
+        Optional<Proceso> findByNombre(String nombre);
 
-    /**
-     * Verifica si existe un proceso con el nombre dado.
-     *
-     * @param nombre Nombre a verificar
-     * @return true si existe, false en caso contrario
-     */
-    boolean existsByNombre(String nombre);
+        /**
+         * Verifica si existe un proceso con el nombre dado.
+         *
+         * @param nombre Nombre a verificar
+         * @return true si existe, false en caso contrario
+         */
+        boolean existsByNombre(String nombre);
 
-    /**
-     * Obtiene todos los procesos activos.
-     *
-     * @return Lista de procesos activos
-     */
-    List<Proceso> findByActivoTrue();
+        /**
+         * Obtiene todos los procesos activos.
+         *
+         * @return Lista de procesos activos
+         */
+        List<Proceso> findByActivoTrue();
 
-    /**
-     * Busca procesos por área.
-     *
-     * @param area Área a filtrar
-     * @return Lista de procesos del área especificada
-     */
-    List<Proceso> findByArea(String area);
+        /**
+         * Busca procesos por área.
+         *
+         * @param area Área a filtrar
+         * @return Lista de procesos del área especificada
+         */
+        List<Proceso> findByArea(String area);
 
-    /**
-     * Busca procesos con filtros dinámicos usando JPQL.
-     * Los parámetros null son ignorados en la búsqueda.
-     *
-     * @param search   Término de búsqueda (nombre o descripción)
-     * @param area     Área a filtrar
-     * @param activo   Estado activo/inactivo
-     * @param pageable Configuración de paginación
-     * @return Página de procesos que cumplen los filtros
-     */
-    @Query("""
-            SELECT p FROM Proceso p
-            WHERE (:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%')))
-            AND (:area IS NULL OR p.area = :area)
-            AND (:activo IS NULL OR p.activo = :activo)
-            """)
-    Page<Proceso> buscarConFiltros(
-            @Param("search") String search,
-            @Param("area") String area,
-            @Param("activo") Boolean activo,
-            Pageable pageable);
+        /**
+         * Busca procesos con filtros dinámicos usando SQL nativo.
+         * Los parámetros null son ignorados en la búsqueda.
+         * Se usa CAST para evitar el error "lower(bytea)" en PostgreSQL.
+         *
+         * @param search   Término de búsqueda (nombre o descripción)
+         * @param area     Área a filtrar
+         * @param activo   Estado activo/inactivo
+         * @param pageable Configuración de paginación
+         * @return Página de procesos que cumplen los filtros
+         */
+        @Query(value = """
+                        SELECT * FROM procesos p
+                        WHERE (CAST(:search AS text) IS NULL
+                               OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                               OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+                        AND (CAST(:area AS text) IS NULL OR p.area = CAST(:area AS text))
+                        AND (:activo IS NULL OR p.activo = :activo)
+                        """, countQuery = """
+                        SELECT COUNT(*) FROM procesos p
+                        WHERE (CAST(:search AS text) IS NULL
+                               OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                               OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+                        AND (CAST(:area AS text) IS NULL OR p.area = CAST(:area AS text))
+                        AND (:activo IS NULL OR p.activo = :activo)
+                        """, nativeQuery = true)
+        Page<Proceso> buscarConFiltros(
+                        @Param("search") String search,
+                        @Param("area") String area,
+                        @Param("activo") Boolean activo,
+                        Pageable pageable);
 
-    /**
-     * Cuenta el número de procesos activos.
-     *
-     * @return Cantidad de procesos activos
-     */
-    long countByActivoTrue();
+        /**
+         * Cuenta el número de procesos activos.
+         *
+         * @return Cantidad de procesos activos
+         */
+        long countByActivoTrue();
 
-    /**
-     * Busca procesos por nombre que contenga el término de búsqueda
-     * (case-insensitive).
-     *
-     * @param nombre Término de búsqueda
-     * @return Lista de procesos coincidentes
-     */
-    List<Proceso> findByNombreContainingIgnoreCase(String nombre);
+        /**
+         * Busca procesos por nombre que contenga el término de búsqueda
+         * (case-insensitive).
+         *
+         * @param nombre Término de búsqueda
+         * @return Lista de procesos coincidentes
+         */
+        List<Proceso> findByNombreContainingIgnoreCase(String nombre);
 }
