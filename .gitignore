@@ -47,3 +47,5 @@ spring.log*
 !.env.example
 application-local.yml
 application-local.properties
+
+*.txt

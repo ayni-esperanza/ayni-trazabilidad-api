@@ -33,7 +33,7 @@ public class ProcesoService {
     private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
         {
             put("id", "id");
-            put("nombre", "nombre");
+            put("proceso", "nombre");
             put("descripcion", "descripcion");
             put("area", "area");
             put("activo", "activo");
@@ -127,22 +127,12 @@ public class ProcesoService {
      * @throws DuplicateEntityException si ya existe un proceso con ese nombre
      */
     public ProcesoResponse crear(ProcesoRequest request) {
-        log.info("Creando nuevo proceso: {}", request.getNombre());
+        log.info("Creando nuevo proceso: {}", request.getProceso());
 
         // Validar nombre único
-        if (procesoRepository.existsByNombre(request.getNombre())) {
+        if (procesoRepository.existsByNombre(request.getProceso())) {
             throw new DuplicateEntityException(
-                    "Ya existe un proceso con el nombre: " + request.getNombre());
-        }
-
-        // Auto-asignar orden a etapas si no viene
-        if (request.getEtapas() != null) {
-            for (int i = 0; i < request.getEtapas().size(); i++) {
-                EtapaRequest etapa = request.getEtapas().get(i);
-                if (etapa.getOrden() == null) {
-                    etapa.setOrden(i + 1);
-                }
-            }
+                    "Ya existe un proceso con el nombre: " + request.getProceso());
         }
 
         Proceso proceso = ProcesoMapper.toEntity(request);
@@ -171,10 +161,10 @@ public class ProcesoService {
                         "Proceso no encontrado con id: " + id));
 
         // Validar nombre único si cambió
-        if (!proceso.getNombre().equals(request.getNombre()) &&
-                procesoRepository.existsByNombre(request.getNombre())) {
+        if (!proceso.getNombre().equals(request.getProceso()) &&
+                procesoRepository.existsByNombre(request.getProceso())) {
             throw new DuplicateEntityException(
-                    "Ya existe un proceso con el nombre: " + request.getNombre());
+                    "Ya existe un proceso con el nombre: " + request.getProceso());
         }
 
         ProcesoMapper.updateEntity(proceso, request);

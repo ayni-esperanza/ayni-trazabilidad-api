@@ -19,11 +19,11 @@ import java.util.List;
 public class ProcesoSimpleResponse {
 
     private Long id;
-    private String nombre;
+    private String proceso;
 
     /**
-     * Lista simplificada de etapas (solo id, nombre, orden).
+     * Lista simplificada de etapas.
      */
     @Builder.Default
-    private List<EtapaSimpleResponse> etapas = new ArrayList<>();
+    private List<String> flujo = new ArrayList<>();
 }

@@ -19,7 +19,7 @@ import java.util.List;
 public class ProcesoResponse {
 
     private Long id;
-    private String nombre;
+    private String proceso;
     private String descripcion;
     private String area;
     private Boolean activo;
@@ -33,7 +33,7 @@ public class ProcesoResponse {
      * Lista completa de etapas ordenadas.
      */
     @Builder.Default
-    private List<EtapaResponse> etapas = new ArrayList<>();
+    private List<String> flujo = new ArrayList<>();
 
     /**
      * Campos de auditoría.

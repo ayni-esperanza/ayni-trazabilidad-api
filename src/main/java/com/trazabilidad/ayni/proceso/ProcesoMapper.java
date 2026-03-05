@@ -30,13 +30,13 @@ public class ProcesoMapper {
 
         return ProcesoResponse.builder()
                 .id(proceso.getId())
-                .nombre(proceso.getNombre())
+                .proceso(proceso.getNombre())
                 .descripcion(proceso.getDescripcion())
                 .area(proceso.getArea())
                 .activo(proceso.getActivo())
                 .cantidadEtapas(proceso.getEtapas() != null ? proceso.getEtapas().size() : 0)
-                .etapas(proceso.getEtapasOrdenadas().stream()
-                        .map(EtapaMapper::toResponse)
+                .flujo(proceso.getEtapasOrdenadas().stream()
+                        .map(Etapa::getNombre)
                         .toList())
                 .fechaCreacion(proceso.getFechaCreacion())
                 .fechaActualizacion(proceso.getFechaActualizacion())
@@ -54,19 +54,24 @@ public class ProcesoMapper {
             return null;
 
         Proceso proceso = Proceso.builder()
-                .nombre(request.getNombre())
+                .nombre(request.getProceso())
                 .descripcion(request.getDescripcion())
                 .area(request.getArea())
                 .activo(true)
                 .etapas(new ArrayList<>())
                 .build();
 
-        // Mapear etapas y establecer relación bidireccional
-        if (request.getEtapas() != null) {
-            request.getEtapas().forEach(etapaRequest -> {
-                Etapa etapa = EtapaMapper.toEntity(etapaRequest, proceso);
+        // Mapear el flujo (Lista de strings) a nuevas entidades Etapa
+        if (request.getFlujo() != null) {
+            int orden = 1;
+            for (String paso : request.getFlujo()) {
+                Etapa etapa = Etapa.builder()
+                        .nombre(paso)
+                        .orden(orden++)
+                        .activo(true)
+                        .build();
                 proceso.agregarEtapa(etapa);
-            });
+            }
         }
 
         return proceso;
@@ -83,37 +88,24 @@ public class ProcesoMapper {
         if (proceso == null || request == null)
             return;
 
-        proceso.setNombre(request.getNombre());
+        proceso.setNombre(request.getProceso());
         proceso.setDescripcion(request.getDescripcion());
         proceso.setArea(request.getArea());
 
-        // Sincronizar etapas
-        if (request.getEtapas() != null) {
-            // Crear mapa de etapas existentes por ID
-            Map<Long, Etapa> etapasExistentesMap = proceso.getEtapas().stream()
-                    .filter(e -> e.getId() != null)
-                    .collect(Collectors.toMap(Etapa::getId, e -> e));
+        // Para simplificar la sincronización con un simple arreglo de strings,
+        // reemplazamos por completo las etapas actuales.
+        proceso.getEtapas().clear();
 
-            // Lista temporal para las nuevas etapas
-            List<Etapa> etapasActualizadas = new ArrayList<>();
-
-            for (EtapaRequest etapaRequest : request.getEtapas()) {
-                if (etapaRequest.getId() != null && etapasExistentesMap.containsKey(etapaRequest.getId())) {
-                    // Actualizar etapa existente
-                    Etapa etapaExistente = etapasExistentesMap.get(etapaRequest.getId());
-                    EtapaMapper.updateEntity(etapaExistente, etapaRequest);
-                    etapasActualizadas.add(etapaExistente);
-                } else {
-                    // Agregar nueva etapa
-                    Etapa nuevaEtapa = EtapaMapper.toEntity(etapaRequest, proceso);
-                    etapasActualizadas.add(nuevaEtapa);
-                }
+        if (request.getFlujo() != null) {
+            int orden = 1;
+            for (String paso : request.getFlujo()) {
+                Etapa etapa = Etapa.builder()
+                        .nombre(paso)
+                        .orden(orden++)
+                        .activo(true)
+                        .build();
+                proceso.agregarEtapa(etapa);
             }
-
-            // Limpiar lista y agregar todas las etapas actualizadas
-            // orphanRemoval se encarga de eliminar las que no están en la lista
-            proceso.getEtapas().clear();
-            etapasActualizadas.forEach(proceso::agregarEtapa);
         }
     }
 
@@ -129,9 +121,9 @@ public class ProcesoMapper {
 
         return ProcesoSimpleResponse.builder()
                 .id(proceso.getId())
-                .nombre(proceso.getNombre())
-                .etapas(proceso.getEtapasOrdenadas().stream()
-                        .map(EtapaMapper::toSimpleResponse)
+                .proceso(proceso.getNombre())
+                .flujo(proceso.getEtapasOrdenadas().stream()
+                        .map(Etapa::getNombre)
                         .toList())
                 .build();
     }

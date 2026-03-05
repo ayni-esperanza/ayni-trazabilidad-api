@@ -21,7 +21,7 @@ public class ProcesoRequest {
 
     @NotBlank(message = "El nombre del proceso es obligatorio")
     @Size(max = 150, message = "El nombre no puede exceder 150 caracteres")
-    private String nombre;
+    private String proceso;
 
     @Size(max = 1000, message = "La descripción no puede exceder 1000 caracteres")
     private String descripcion;
@@ -35,5 +35,5 @@ public class ProcesoRequest {
      * Puede estar vacía al crear un proceso inicialmente.
      */
     @Builder.Default
-    private List<EtapaRequest> etapas = new ArrayList<>();
+    private List<String> flujo = new ArrayList<>();
 }
