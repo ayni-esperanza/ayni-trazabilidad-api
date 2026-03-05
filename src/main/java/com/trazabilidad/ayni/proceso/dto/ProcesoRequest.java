@@ -23,9 +23,6 @@ public class ProcesoRequest {
     @Size(max = 150, message = "El nombre no puede exceder 150 caracteres")
     private String proceso;
 
-    @Size(max = 1000, message = "La descripción no puede exceder 1000 caracteres")
-    private String descripcion;
-
     @NotBlank(message = "El área es obligatoria")
     @Size(max = 100, message = "El área no puede exceder 100 caracteres")
     private String area;

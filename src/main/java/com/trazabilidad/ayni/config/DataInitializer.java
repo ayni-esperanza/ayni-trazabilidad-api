@@ -278,7 +278,6 @@ public class DataInitializer implements CommandLineRunner {
                 // Proceso 1: Construcción de Edificios
                 Proceso construccion = Proceso.builder()
                                 .nombre("Construcción de Edificios")
-                                .descripcion("Proceso completo para la construcción de edificios residenciales y comerciales")
                                 .area("Construcción")
                                 .activo(true)
                                 .etapas(new ArrayList<>())
@@ -332,7 +331,6 @@ public class DataInitializer implements CommandLineRunner {
                 // Proceso 2: Desarrollo de Software
                 Proceso software = Proceso.builder()
                                 .nombre("Desarrollo de Software a Medida")
-                                .descripcion("Proceso ágil para desarrollo de aplicaciones personalizadas")
                                 .area("Tecnología")
                                 .activo(true)
                                 .etapas(new ArrayList<>())
@@ -386,7 +384,6 @@ public class DataInitializer implements CommandLineRunner {
                 // Proceso 3: Instalación de Sistemas Eléctricos
                 Proceso electrico = Proceso.builder()
                                 .nombre("Instalación de Sistemas Eléctricos")
-                                .descripcion("Instalación y mantenimiento de sistemas eléctricos industriales")
                                 .area("Electricidad")
                                 .activo(true)
                                 .etapas(new ArrayList<>())

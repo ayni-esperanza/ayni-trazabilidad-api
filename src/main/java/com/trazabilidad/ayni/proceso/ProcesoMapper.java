@@ -19,7 +19,7 @@ public class ProcesoMapper {
 
     /**
      * Convierte una entidad Proceso a ProcesoResponse.
-     * Incluye el cálculo de cantidadEtapas y mapeo de etapas ordenadas.
+     * Mapea los campos utilizados por el frontend.
      *
      * @param proceso Entidad a convertir
      * @return DTO de respuesta
@@ -31,15 +31,11 @@ public class ProcesoMapper {
         return ProcesoResponse.builder()
                 .id(proceso.getId())
                 .proceso(proceso.getNombre())
-                .descripcion(proceso.getDescripcion())
                 .area(proceso.getArea())
                 .activo(proceso.getActivo())
-                .cantidadEtapas(proceso.getEtapas() != null ? proceso.getEtapas().size() : 0)
                 .flujo(proceso.getEtapasOrdenadas().stream()
                         .map(Etapa::getNombre)
                         .toList())
-                .fechaCreacion(proceso.getFechaCreacion())
-                .fechaActualizacion(proceso.getFechaActualizacion())
                 .build();
     }
 
@@ -55,7 +51,6 @@ public class ProcesoMapper {
 
         Proceso proceso = Proceso.builder()
                 .nombre(request.getProceso())
-                .descripcion(request.getDescripcion())
                 .area(request.getArea())
                 .activo(true)
                 .etapas(new ArrayList<>())
@@ -89,7 +84,6 @@ public class ProcesoMapper {
             return;
 
         proceso.setNombre(request.getProceso());
-        proceso.setDescripcion(request.getDescripcion());
         proceso.setArea(request.getArea());
 
         // Para simplificar la sincronización con un simple arreglo de strings,

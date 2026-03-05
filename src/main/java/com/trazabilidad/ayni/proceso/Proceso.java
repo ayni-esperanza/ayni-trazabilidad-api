@@ -42,9 +42,6 @@ public class Proceso extends Auditable {
     @Column(nullable = false, unique = true, length = 150)
     private String nombre;
 
-    @Column(columnDefinition = "TEXT")
-    private String descripcion;
-
     @Size(max = 100, message = "El área no puede exceder 100 caracteres")
     @Column(length = 100)
     private String area;

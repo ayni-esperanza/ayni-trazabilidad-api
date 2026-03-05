@@ -34,7 +34,6 @@ public class ProcesoService {
         {
             put("id", "id");
             put("proceso", "nombre");
-            put("descripcion", "descripcion");
             put("area", "area");
             put("activo", "activo");
             put("fechaCreacion", "fecha_creacion");
