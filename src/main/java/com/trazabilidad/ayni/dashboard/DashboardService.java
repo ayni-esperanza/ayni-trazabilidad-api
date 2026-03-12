@@ -131,8 +131,13 @@ public class DashboardService {
 
         for (Long proyectoId : proyectoIds) {
             BigDecimal totalMateriales = costoMaterialRepository.sumCostoTotalByProyectoId(proyectoId);
+            if (totalMateriales == null) totalMateriales = BigDecimal.ZERO;
+
             BigDecimal totalManoObra = costoManoObraRepository.sumCostoTotalByProyectoId(proyectoId);
+            if (totalManoObra == null) totalManoObra = BigDecimal.ZERO;
+
             BigDecimal totalAdicionales = costoAdicionalRepository.sumCostoTotalByProyectoId(proyectoId);
+            if (totalAdicionales == null) totalAdicionales = BigDecimal.ZERO;
 
             total = total.add(totalMateriales)
                     .add(totalManoObra)
