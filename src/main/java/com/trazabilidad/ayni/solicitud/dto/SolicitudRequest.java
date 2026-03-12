@@ -2,7 +2,7 @@ package com.trazabilidad.ayni.solicitud.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +33,7 @@ public class SolicitudRequest {
     private String representante;
 
     @NotNull(message = "El costo es obligatorio")
-    @Positive(message = "El costo debe ser mayor a cero")
+    @Min(value = 0, message = "El costo debe ser cero o mayor")
     private BigDecimal costo;
 
     @NotNull(message = "El responsable es obligatorio")
