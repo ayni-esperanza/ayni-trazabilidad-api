@@ -55,8 +55,22 @@ public class Solicitud extends Auditable {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costo;
 
+    @Size(max = 200, message = "El representante no puede exceder 200 caracteres")
+    @Column(length = 200)
+    private String representante;
+
+    @Size(max = 500, message = "La ubicación no puede exceder 500 caracteres")
+    @Column(length = 500)
+    private String ubicacion;
+
     @Column(columnDefinition = "TEXT")
     private String descripcion;
+
+    @Column(name = "fecha_inicio")
+    private LocalDate fechaInicio;
+
+    @Column(name = "fecha_fin")
+    private LocalDate fechaFin;
 
     @NotNull
     @Builder.Default

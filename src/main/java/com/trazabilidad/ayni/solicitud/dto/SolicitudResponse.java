@@ -22,11 +22,15 @@ public class SolicitudResponse {
     private Long id;
     private String nombreProyecto;
     private String cliente;
+    private String representante;
     private BigDecimal costo;
     private Long responsableId;
     private String responsableNombre;
     private String descripcion;
+    private String ubicacion;
     private LocalDate fechaSolicitud;
+    private LocalDate fechaInicio;
+    private LocalDate fechaFin;
     private String estado;
     private Boolean tieneProyecto;
     private Long proyectoId;

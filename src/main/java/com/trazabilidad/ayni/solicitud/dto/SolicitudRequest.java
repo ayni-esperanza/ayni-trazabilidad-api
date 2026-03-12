@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * DTO de entrada para crear o actualizar una Solicitud.
@@ -28,6 +29,9 @@ public class SolicitudRequest {
     @Size(max = 200, message = "El cliente no puede exceder 200 caracteres")
     private String cliente;
 
+    @Size(max = 200, message = "El representante no puede exceder 200 caracteres")
+    private String representante;
+
     @NotNull(message = "El costo es obligatorio")
     @Positive(message = "El costo debe ser mayor a cero")
     private BigDecimal costo;
@@ -37,4 +41,11 @@ public class SolicitudRequest {
 
     @Size(max = 5000, message = "La descripción no puede exceder 5000 caracteres")
     private String descripcion;
+
+    @Size(max = 500, message = "La ubicación no puede exceder 500 caracteres")
+    private String ubicacion;
+
+    private LocalDate fechaInicio;
+
+    private LocalDate fechaFin;
 }

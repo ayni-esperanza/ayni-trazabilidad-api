@@ -30,11 +30,15 @@ public class SolicitudMapper {
                 .id(solicitud.getId())
                 .nombreProyecto(solicitud.getNombreProyecto())
                 .cliente(solicitud.getCliente())
+                .representante(solicitud.getRepresentante())
                 .costo(solicitud.getCosto())
                 .responsableId(solicitud.getResponsable().getId())
                 .responsableNombre(solicitud.getResponsable().getNombreCompleto())
                 .descripcion(solicitud.getDescripcion())
+                .ubicacion(solicitud.getUbicacion())
                 .fechaSolicitud(solicitud.getFechaSolicitud())
+                .fechaInicio(solicitud.getFechaInicio())
+                .fechaFin(solicitud.getFechaFin())
                 .estado(solicitud.getEstado().name())
                 .tieneProyecto(false)
                 .proyectoId(null)
@@ -57,9 +61,13 @@ public class SolicitudMapper {
         return Solicitud.builder()
                 .nombreProyecto(request.getNombreProyecto())
                 .cliente(request.getCliente())
+                .representante(request.getRepresentante())
                 .costo(request.getCosto())
                 .responsable(responsable)
                 .descripcion(request.getDescripcion())
+                .ubicacion(request.getUbicacion())
+                .fechaInicio(request.getFechaInicio())
+                .fechaFin(request.getFechaFin())
                 .build();
     }
 
@@ -77,9 +85,13 @@ public class SolicitudMapper {
 
         solicitud.setNombreProyecto(request.getNombreProyecto());
         solicitud.setCliente(request.getCliente());
+        solicitud.setRepresentante(request.getRepresentante());
         solicitud.setCosto(request.getCosto());
         solicitud.setResponsable(responsable);
         solicitud.setDescripcion(request.getDescripcion());
+        solicitud.setUbicacion(request.getUbicacion());
+        solicitud.setFechaInicio(request.getFechaInicio());
+        solicitud.setFechaFin(request.getFechaFin());
     }
 
     /**
