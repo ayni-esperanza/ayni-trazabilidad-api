@@ -11,15 +11,24 @@ import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.shared.enums.EstadoTarea;
 import com.trazabilidad.ayni.solicitud.SolicitudRepository;
 import com.trazabilidad.ayni.tarea.TareaRepository;
+import com.trazabilidad.ayni.usuario.Usuario;
+import com.trazabilidad.ayni.usuario.UsuarioRepository;
+import com.trazabilidad.ayni.tarea.Tarea;
+import com.trazabilidad.ayni.dashboard.dto.ResponsableIndicadorResponse;
+import com.trazabilidad.ayni.dashboard.dto.ProyectoIndicadorResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Servicio para agregación de datos del dashboard.
@@ -36,6 +45,7 @@ public class DashboardService {
     private final CostoMaterialRepository costoMaterialRepository;
     private final CostoManoObraRepository costoManoObraRepository;
     private final CostoAdicionalRepository costoAdicionalRepository;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Obtiene el resumen general del dashboard con estadísticas globales.
@@ -172,5 +182,124 @@ public class DashboardService {
         }
 
         return distribucion;
+    }
+
+    /**
+     * Obtiene indicadores detallados de todos los responsables para el dashboard.
+     */
+    public List<ResponsableIndicadorResponse> obtenerIndicadoresResponsables() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        List<ResponsableIndicadorResponse> list = new ArrayList<>();
+        
+        long totalProyectosGlobal = proyectoRepository.count();
+
+        for (Usuario u : usuarios) {
+            List<Tarea> tareasUsuario = tareaRepository.findTareasPorUsuario(u.getId());
+            int participacionProyectos = (int) tareasUsuario.stream()
+                .map(t -> t.getEtapaProyecto().getProyecto().getId())
+                .distinct()
+                .count();
+                
+            long tareasRealizadas = tareasUsuario.stream()
+                .filter(t -> t.getEstado() == EstadoTarea.COMPLETADA)
+                .count();
+                
+            int tareasRealizadasPorcentaje = tareasUsuario.isEmpty() ? 0 : 
+                (int) ((tareasRealizadas * 100) / tareasUsuario.size());
+                
+            long tareasATiempo = tareasUsuario.stream()
+                .filter(t -> t.getEstado() == EstadoTarea.COMPLETADA && !t.estaRetrasada())
+                .count();
+                
+            int tareasRealizadasTiempo = tareasRealizadas == 0 ? 0 : 
+                (int) ((tareasATiempo * 100) / tareasRealizadas);
+                
+            int tareasPorcentajeProyectos = totalProyectosGlobal == 0 ? 0 : 
+                (int) ((participacionProyectos * 100) / totalProyectosGlobal);
+                
+            int eficienciaGeneral = (tareasRealizadasPorcentaje + tareasRealizadasTiempo) / 2;
+            Double promedio = eficienciaGeneral * 5.0 / 100.0;
+            
+            String antiguedad = "N/A";
+            if (u.getFechaIngreso() != null) {
+                long years = ChronoUnit.YEARS.between(u.getFechaIngreso().toLocalDate(), LocalDate.now());
+                long months = ChronoUnit.MONTHS.between(u.getFechaIngreso().toLocalDate(), LocalDate.now()) % 12;
+                antiguedad = years + " años " + months + " meses";
+            }
+            
+            list.add(ResponsableIndicadorResponse.builder()
+                .id(u.getId())
+                .nombre(u.getNombreCompleto())
+                .cargo(u.getCargo())
+                .antiguedad(antiguedad)
+                .participacionProyectos(participacionProyectos)
+                .tareasRealizadas(tareasRealizadas)
+                .tareasRealizadasPorcentaje(tareasRealizadasPorcentaje)
+                .tareasRealizadasTiempo(tareasRealizadasTiempo)
+                .tareasPorcentajeProyectos(tareasPorcentajeProyectos)
+                .promedio(BigDecimal.valueOf(promedio).setScale(1, RoundingMode.HALF_UP).doubleValue())
+                .eficienciaGeneral(eficienciaGeneral)
+                .build());
+        }
+        return list;
+    }
+
+    /**
+     * Obtiene indicadores detallados de todos los proyectos para el dashboard.
+     */
+    public List<ProyectoIndicadorResponse> obtenerIndicadoresProyectos() {
+        List<Proyecto> proyectos = proyectoRepository.findAll();
+        List<ProyectoIndicadorResponse> list = new ArrayList<>();
+
+        for (Proyecto p : proyectos) {
+            BigDecimal totalMateriales = costoMaterialRepository.sumCostoTotalByProyectoId(p.getId());
+            if (totalMateriales == null) totalMateriales = BigDecimal.ZERO;
+            
+            BigDecimal totalManoObra = costoManoObraRepository.sumCostoTotalByProyectoId(p.getId());
+            if (totalManoObra == null) totalManoObra = BigDecimal.ZERO;
+            
+            BigDecimal totalAdicionales = costoAdicionalRepository.sumCostoTotalByProyectoId(p.getId());
+            if (totalAdicionales == null) totalAdicionales = BigDecimal.ZERO;
+
+            BigDecimal gasto = totalMateriales.add(totalManoObra).add(totalAdicionales);
+            BigDecimal inversion = p.getCosto() != null ? p.getCosto() : BigDecimal.ZERO;
+            BigDecimal retorno = inversion.subtract(gasto);
+            
+            int tasaRetorno = 0;
+            if (inversion.compareTo(BigDecimal.ZERO) > 0) {
+                tasaRetorno = retorno.multiply(new BigDecimal("100"))
+                    .divide(inversion, RoundingMode.HALF_UP).intValue();
+            }
+            
+            long tareasTotal = tareaRepository.countByProyectoId(p.getId());
+            long tareasCompletadas = tareaRepository.countByProyectoIdAndEstado(p.getId(), EstadoTarea.COMPLETADA);
+            
+            int eficiencia = tareasTotal == 0 ? 0 : (int) ((tareasCompletadas * 100) / tareasTotal);
+            
+            String responsableNombre = p.getResponsable() != null ? p.getResponsable().getNombreCompleto() : "N/A";
+            Long responsableId = p.getResponsable() != null ? p.getResponsable().getId() : null;
+
+            list.add(ProyectoIndicadorResponse.builder()
+                .id(p.getId())
+                .nombre(p.getNombreProyecto())
+                .responsable(responsableNombre)
+                .responsableId(responsableId)
+                .cliente(p.getCliente())
+                .etapa(p.getEstado().name()) 
+                .estado(p.getEstado().name())
+                .avance(p.calcularProgreso())
+                .tareasCompletadas(tareasCompletadas)
+                .tareasTotal(tareasTotal)
+                .eficiencia(eficiencia)
+                .inversion(inversion)
+                .gasto(gasto)
+                .retorno(retorno)
+                .durationStart(p.getFechaInicio())
+                .durationEnd(p.getFechaFinalizacion())
+                .tasaRetorno(tasaRetorno)
+                .descripcion(p.getDescripcion())
+                .build());
+        }
+        return list;
     }
 }
