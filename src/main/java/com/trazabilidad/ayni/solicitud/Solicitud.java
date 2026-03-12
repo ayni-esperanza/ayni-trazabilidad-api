@@ -7,7 +7,7 @@ import com.trazabilidad.ayni.usuario.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,7 +51,7 @@ public class Solicitud extends Auditable {
     private String cliente;
 
     @NotNull(message = "El costo es obligatorio")
-    @Positive(message = "El costo debe ser mayor a cero")
+    @Min(value = 0, message = "El costo debe ser cero o mayor")
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costo;
 
