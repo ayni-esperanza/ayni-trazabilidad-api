@@ -67,9 +67,13 @@ public class ProyectoMapper {
 
         return ProyectoResumenResponse.builder()
                 .id(proyecto.getId())
+                .solicitudId(proyecto.getSolicitud() != null ? proyecto.getSolicitud().getId() : null)
                 .nombreProyecto(proyecto.getNombreProyecto())
                 .cliente(proyecto.getCliente())
+                .costo(proyecto.getCosto())
                 .estado(proyecto.getEstado().name())
+                .procesoId(proyecto.getProceso().getId())
+                .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsable().getNombreCompleto())
                 .procesoNombre(proyecto.getProceso().getNombre())
                 .progreso(proyecto.calcularProgreso())

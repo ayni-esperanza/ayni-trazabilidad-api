@@ -86,6 +86,19 @@ public class ProyectoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Actualizar proyecto")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Proyecto actualizado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "404", description = "Proyecto no encontrado")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<ProyectoResponse> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody ProyectoUpdateRequest request) {
+        return ResponseEntity.ok(proyectoService.actualizar(id, request));
+    }
+
     @Operation(summary = "Cambiar estado de proyecto")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado cambiado exitosamente"),

@@ -11,6 +11,8 @@ import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.solicitud.Solicitud;
 import com.trazabilidad.ayni.solicitud.SolicitudRepository;
+import com.trazabilidad.ayni.usuario.Usuario;
+import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +36,7 @@ public class ProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final SolicitudRepository solicitudRepository;
     private final ProcesoRepository procesoRepository;
+    private final UsuarioRepository usuarioRepository;
 
     // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
     private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
@@ -180,6 +183,61 @@ public class ProyectoService {
         Proyecto saved = proyectoRepository.save(proyecto);
 
         return ProyectoMapper.toResponse(saved);
+    }
+
+    /**
+     * Actualiza campos editables del proyecto.
+     */
+    public ProyectoResponse actualizar(Long id, ProyectoUpdateRequest request) {
+        Proyecto proyecto = proyectoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
+
+        if (request.getNombreProyecto() != null) {
+            proyecto.setNombreProyecto(request.getNombreProyecto());
+        }
+        if (request.getCliente() != null) {
+            proyecto.setCliente(request.getCliente());
+        }
+        if (request.getDescripcion() != null) {
+            proyecto.setDescripcion(request.getDescripcion());
+        }
+        if (request.getOrdenCompra() != null) {
+            proyecto.setOrdenCompra(request.getOrdenCompra());
+        }
+        if (request.getCosto() != null) {
+            proyecto.setCosto(request.getCosto());
+        }
+
+        if (request.getFechaInicio() != null) {
+            proyecto.setFechaInicio(request.getFechaInicio());
+        }
+        if (request.getFechaFinalizacion() != null) {
+            proyecto.setFechaFinalizacion(request.getFechaFinalizacion());
+        }
+        if (proyecto.getFechaInicio() != null && proyecto.getFechaFinalizacion() != null
+                && proyecto.getFechaFinalizacion().isBefore(proyecto.getFechaInicio())) {
+            throw new BadRequestException("La fecha de finalización debe ser posterior a la fecha de inicio");
+        }
+
+        if (request.getProcesoId() != null &&
+                (proyecto.getProceso() == null || !proyecto.getProceso().getId().equals(request.getProcesoId()))) {
+            Proceso proceso = procesoRepository.findById(request.getProcesoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Proceso", request.getProcesoId()));
+            if (!proceso.getActivo()) {
+                throw new BadRequestException("El proceso seleccionado no está activo");
+            }
+            proyecto.setProceso(proceso);
+        }
+
+        if (request.getResponsableId() != null
+                && (proyecto.getResponsable() == null || !proyecto.getResponsable().getId().equals(request.getResponsableId()))) {
+            Usuario responsable = usuarioRepository.findById(request.getResponsableId())
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
+            proyecto.setResponsable(responsable);
+        }
+
+        Proyecto updated = proyectoRepository.save(proyecto);
+        return ProyectoMapper.toResponse(updated);
     }
 
     /**
