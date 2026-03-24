@@ -84,6 +84,8 @@ management:
 app:
   data-initializer:
     enabled: ${DATA_INITIALIZER_ENABLED:true}
+  schema-cleanup:
+    enabled: ${SCHEMA_CLEANUP_ENABLED:false}
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:admin123}

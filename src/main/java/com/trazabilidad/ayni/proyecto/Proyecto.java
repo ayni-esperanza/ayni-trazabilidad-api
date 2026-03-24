@@ -23,10 +23,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Entidad que representa un Proyecto generado desde una Solicitud.
- * Un proyecto utiliza un Proceso como plantilla para generar sus etapas.
- */
+/** Entidad que representa un Proyecto generado desde una Solicitud. */
 @Entity
 @Table(name = "proyectos", indexes = {
         @Index(name = "idx_proyecto_solicitud", columnList = "solicitud_id", unique = true),
@@ -159,11 +156,4 @@ public class Proyecto extends Auditable {
         return true;
     }
 
-    public List<EtapaProyecto> getEtapasOrdenadas() {
-        return List.of();
-    }
-
-    public List<EtapaProyecto> getEtapasProyecto() {
-        return List.of();
-    }
 }

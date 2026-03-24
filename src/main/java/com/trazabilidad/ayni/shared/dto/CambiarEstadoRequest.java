@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO reutilizable para cambiar el estado de cualquier entidad.
- * Utilizado por Solicitud, Proyecto, EtapaProyecto, Tarea.
+ * Utilizado por Solicitud y Proyecto.
  */
 @Data
 @NoArgsConstructor
