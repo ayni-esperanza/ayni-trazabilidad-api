@@ -1,15 +1,14 @@
 package com.trazabilidad.ayni.proyecto;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.trazabilidad.ayni.proyecto.dto.FlujoAdjuntoResponse;
 import com.trazabilidad.ayni.proyecto.dto.FlujoNodoResponse;
 import com.trazabilidad.ayni.proyecto.dto.FlujoProyectoResponse;
 import com.trazabilidad.ayni.proyecto.dto.OrdenCompraResponse;
 import com.trazabilidad.ayni.proyecto.dto.ProyectoResumenResponse;
 import com.trazabilidad.ayni.proyecto.dto.ProyectoResponse;
-import com.trazabilidad.ayni.shared.util.JsonCodec;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
@@ -37,10 +36,6 @@ public class ProyectoMapper {
         if (proyecto == null)
             return null;
 
-        List<com.trazabilidad.ayni.proyecto.dto.EtapaProyectoResponse> etapas = proyecto.getEtapasOrdenadas().stream()
-                .map(EtapaProyectoMapper::toResponse)
-                .toList();
-
         return ProyectoResponse.builder()
                 .id(proyecto.getId())
                 .nombreProyecto(proyecto.getNombreProyecto())
@@ -49,7 +44,7 @@ public class ProyectoMapper {
                 .ubicacion(proyecto.getUbicacion())
                 .areas(proyecto.getAreas())
                 .costo(proyecto.getCosto())
-                .ordenesCompra(parseOrdenesCompra(proyecto.getOrdenesCompraJson()))
+                .ordenesCompra(mapOrdenesCompra(proyecto.getOrdenesCompra()))
                 .descripcion(proyecto.getDescripcion())
                 .fechaRegistro(proyecto.getFechaRegistro())
                 .fechaInicio(proyecto.getFechaInicio())
@@ -60,14 +55,9 @@ public class ProyectoMapper {
                 .solicitudId(proyecto.getSolicitud() != null ? proyecto.getSolicitud().getId() : null)
                 .solicitudNombreProyecto(
                         proyecto.getSolicitud() != null ? proyecto.getSolicitud().getNombreProyecto() : null)
-                .procesoId(proyecto.getProceso().getId())
-                .procesoNombre(proyecto.getProceso().getNombre())
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsable().getNombreCompleto())
-                .cantidadEtapas(proyecto.getEtapasProyecto() != null ? proyecto.getEtapasProyecto().size() : 0)
-                .progreso(proyecto.calcularProgreso())
-                .etapasProyecto(etapas)
-                .flujo(parseFlujo(proyecto.getFlujoJson(), publicUrlResolver))
+                .flujo(mapFlujo(proyecto.getActividades(), publicUrlResolver))
                 .fechaCreacion(proyecto.getFechaCreacion())
                 .fechaActualizacion(proyecto.getFechaActualizacion())
                 .build();
@@ -90,11 +80,8 @@ public class ProyectoMapper {
                 .cliente(proyecto.getCliente())
                 .costo(proyecto.getCosto())
                 .estado(proyecto.getEstado().getDisplayName())
-                .procesoId(proyecto.getProceso().getId())
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsable().getNombreCompleto())
-                .procesoNombre(proyecto.getProceso().getNombre())
-                .progreso(proyecto.calcularProgreso())
                 .fechaInicio(proyecto.getFechaInicio())
                 .fechaFinalizacion(proyecto.getFechaFinalizacion())
                 .build();
@@ -111,36 +98,61 @@ public class ProyectoMapper {
                 .toList();
     }
 
-    private static List<OrdenCompraResponse> parseOrdenesCompra(String json) {
-        return JsonCodec.fromJson(json, new TypeReference<List<OrdenCompraResponse>>() {
-        }, new ArrayList<>());
-    }
-
-    private static FlujoProyectoResponse parseFlujo(String json, Function<String, String> publicUrlResolver) {
-        FlujoProyectoResponse flujo = JsonCodec.fromJson(json, FlujoProyectoResponse.class,
-                FlujoProyectoResponse.builder().nodos(new ArrayList<>()).build());
-
-        if (flujo.getNodos() == null) {
-            flujo.setNodos(new ArrayList<>());
-            return flujo;
+    private static List<OrdenCompraResponse> mapOrdenesCompra(List<OrdenCompra> ordenesCompra) {
+        if (ordenesCompra == null) {
+            return new ArrayList<>();
         }
 
-        flujo.getNodos().forEach(nodo -> {
-            if (nodo.getAdjuntos() == null) {
-                nodo.setAdjuntos(new ArrayList<>());
-                return;
-            }
+        return ordenesCompra.stream()
+                .sorted(Comparator.comparing(OrdenCompra::getId))
+                .map(orden -> OrdenCompraResponse.builder()
+                        .numero(orden.getNumero())
+                        .fecha(orden.getFecha())
+                        .tipo(orden.getTipo())
+                        .numeroLicitacion(orden.getNumeroLicitacion())
+                        .numeroSolicitud(orden.getNumeroSolicitud())
+                        .total(orden.getTotal())
+                        .build())
+                .toList();
+    }
 
-            nodo.setAdjuntos(nodo.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
-                    .nombre(adjunto.getNombre())
-                    .tipo(adjunto.getTipo())
-                    .tamano(adjunto.getTamano())
-                    .objectKey(adjunto.getObjectKey())
-                    .dataUrl(adjunto.getDataUrl())
-                    .url(adjunto.getObjectKey() != null ? publicUrlResolver.apply(adjunto.getObjectKey()) : null)
-                    .build()).toList());
-        });
+    private static FlujoProyectoResponse mapFlujo(List<ActividadProyecto> actividades, Function<String, String> publicUrlResolver) {
+        if (actividades == null) {
+            return FlujoProyectoResponse.builder().nodos(new ArrayList<>()).build();
+        }
 
-        return flujo;
+        List<FlujoNodoResponse> nodos = actividades.stream()
+                .sorted(Comparator.comparing(ActividadProyecto::getId))
+                .map(actividad -> FlujoNodoResponse.builder()
+                        .id(actividad.getId())
+                        .nombre(actividad.getNombre())
+                        .tipo(actividad.getTipo())
+                        .posicionX(actividad.getPosicionX())
+                        .posicionY(actividad.getPosicionY())
+                        .estadoActividad(actividad.getEstadoActividad())
+                        .fechaCambioEstado(actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
+                        .responsableId(actividad.getResponsableId())
+                        .fechaInicio(actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null)
+                        .fechaFin(actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null)
+                        .descripcion(actividad.getDescripcion())
+                        .adjuntos(actividad.getAdjuntos() != null
+                                ? actividad.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
+                                        .nombre(adjunto.getNombre())
+                                        .tipo(adjunto.getTipo())
+                                        .tamano(adjunto.getTamano())
+                                        .objectKey(adjunto.getObjectKey())
+                                        .dataUrl(adjunto.getDataUrl())
+                                        .url(adjunto.getObjectKey() != null
+                                                ? publicUrlResolver.apply(adjunto.getObjectKey())
+                                                : null)
+                                        .build()).toList()
+                                : new ArrayList<>())
+                        .siguientesIds(actividad.getSiguientes() != null
+                                ? actividad.getSiguientes().stream().map(ActividadProyecto::getId).toList()
+                                : new ArrayList<>())
+                        .build())
+                .toList();
+
+        return FlujoProyectoResponse.builder().nodos(nodos).build();
     }
 }

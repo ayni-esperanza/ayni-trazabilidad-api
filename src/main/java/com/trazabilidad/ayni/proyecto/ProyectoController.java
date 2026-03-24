@@ -18,8 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * Gestionar proyectos.
  * Iniciar proyectos y gestionar sus etapas.
@@ -31,7 +29,6 @@ import java.util.List;
 public class ProyectoController {
 
     private final ProyectoService proyectoService;
-    private final EtapaProyectoService etapaProyectoService;
 
     @Operation(summary = "Listar proyectos con filtros y paginación")
     @GetMapping
@@ -39,8 +36,6 @@ public class ProyectoController {
             @Parameter(description = "Búsqueda en nombre de proyecto, cliente o descripción") @RequestParam(required = false) String search,
 
             @Parameter(description = "Filtrar por estado") @RequestParam(required = false) EstadoProyecto estado,
-
-            @Parameter(description = "Filtrar por proceso") @RequestParam(required = false) Long procesoId,
 
             @Parameter(description = "Filtrar por responsable") @RequestParam(required = false) Long responsableId,
 
@@ -58,7 +53,7 @@ public class ProyectoController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PaginatedResponse<ProyectoResumenResponse> response = proyectoService.listar(
-                search, estado, procesoId, responsableId, pageable);
+                search, estado, responsableId, pageable);
 
         return ResponseEntity.ok(response);
     }
@@ -122,56 +117,6 @@ public class ProyectoController {
     @PostMapping("/{id}/finalizar")
     public ResponseEntity<ProyectoResponse> finalizarProyecto(@PathVariable Long id) {
         return ResponseEntity.ok(proyectoService.finalizarProyecto(id));
-    }
-
-    @Operation(summary = "Obtener etapas de un proyecto")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Etapas encontradas"),
-            @ApiResponse(responseCode = "404", description = "Proyecto no encontrado")
-    })
-    @GetMapping("/{id}/etapas")
-    public ResponseEntity<List<EtapaProyectoResponse>> obtenerEtapas(@PathVariable Long id) {
-        return ResponseEntity.ok(etapaProyectoService.obtenerPorProyecto(id));
-    }
-
-    @Operation(summary = "Actualizar una etapa de proyecto")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Etapa actualizada exitosamente"),
-            @ApiResponse(responseCode = "404", description = "Etapa no encontrada")
-    })
-    @PutMapping("/{id}/etapas/{etapaId}")
-    public ResponseEntity<EtapaProyectoResponse> actualizarEtapa(
-            @PathVariable Long id,
-            @PathVariable Long etapaId,
-            @Valid @RequestBody EtapaProyectoRequest request) {
-        return ResponseEntity.ok(etapaProyectoService.actualizarEtapa(etapaId, request));
-    }
-
-    @Operation(summary = "Cambiar estado de una etapa")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Estado de etapa cambiado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Transición inválida o etapa anterior no completada"),
-            @ApiResponse(responseCode = "404", description = "Etapa no encontrada")
-    })
-    @PatchMapping("/{id}/etapas/{etapaId}/estado")
-    public ResponseEntity<EtapaProyectoResponse> cambiarEstadoEtapa(
-            @PathVariable Long id,
-            @PathVariable Long etapaId,
-            @Valid @RequestBody CambiarEstadoRequest request) {
-        return ResponseEntity.ok(etapaProyectoService.cambiarEstado(etapaId, request));
-    }
-
-    @Operation(summary = "Completar una etapa")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Etapa completada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Etapa no está en proceso"),
-            @ApiResponse(responseCode = "404", description = "Etapa no encontrada")
-    })
-    @PostMapping("/{id}/etapas/{etapaId}/completar")
-    public ResponseEntity<EtapaProyectoResponse> completarEtapa(
-            @PathVariable Long id,
-            @PathVariable Long etapaId) {
-        return ResponseEntity.ok(etapaProyectoService.completarEtapa(etapaId));
     }
 
     @Operation(summary = "Obtener estadísticas de proyectos")

@@ -33,7 +33,5 @@ public class ProyectoUpdateRequest {
 
     private LocalDate fechaFinalizacion;
 
-    private Long procesoId;
-
     private Long responsableId;
 }

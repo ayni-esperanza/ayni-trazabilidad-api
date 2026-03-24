@@ -24,11 +24,8 @@ public class ProyectoResumenResponse {
     private String cliente;
     private BigDecimal costo;
     private String estado;
-    private Long procesoId;
     private Long responsableId;
     private String responsableNombre;
-    private String procesoNombre;
-    private Integer progreso;
     private LocalDate fechaInicio;
     private LocalDate fechaFinalizacion;
 }

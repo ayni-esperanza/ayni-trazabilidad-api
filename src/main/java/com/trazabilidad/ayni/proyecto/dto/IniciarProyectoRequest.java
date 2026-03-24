@@ -22,8 +22,6 @@ public class IniciarProyectoRequest {
     @NotNull(message = "El ID de solicitud es obligatorio")
     private Long solicitudId;
 
-    private Long procesoId;
-
     private LocalDate fechaInicio;
 
     @Future(message = "La fecha de finalización debe ser futura")

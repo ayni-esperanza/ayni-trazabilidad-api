@@ -26,7 +26,6 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
          *
          * @param search        Búsqueda en nombre de proyecto, cliente o descripción
          * @param estado        Estado del proyecto (opcional)
-         * @param procesoId     ID del proceso (opcional)
          * @param responsableId ID del responsable (opcional)
          * @param pageable      Paginación
          * @return Página de proyectos
@@ -37,7 +36,6 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
                         "      LOWER(p.cliente) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
                         "      LOWER(p.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) " +
                         "  AND (CAST(:estado AS text) IS NULL OR p.estado = CAST(:estado AS text)) " +
-                        "  AND (:procesoId IS NULL OR p.proceso_id = :procesoId) " +
                         "  AND (:responsableId IS NULL OR p.responsable_id = :responsableId)", countQuery = "SELECT COUNT(*) FROM proyectos p "
                                         +
                                         "WHERE (CAST(:search AS text) IS NULL OR " +
@@ -48,19 +46,18 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
                                         "      LOWER(p.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) "
                                         +
                                         "  AND (CAST(:estado AS text) IS NULL OR p.estado = CAST(:estado AS text)) " +
-                                        "  AND (:procesoId IS NULL OR p.proceso_id = :procesoId) " +
                                         "  AND (:responsableId IS NULL OR p.responsable_id = :responsableId)", nativeQuery = true)
         Page<Proyecto> buscarConFiltros(
                         @Param("search") String search,
                         @Param("estado") EstadoProyecto estado,
-                        @Param("procesoId") Long procesoId,
                         @Param("responsableId") Long responsableId,
                         Pageable pageable);
 
         /**
          * Busca proyecto por ID de solicitud.
          */
-        @EntityGraph(attributePaths = { "proceso", "responsable", "solicitud", "etapasProyecto" })
+        @EntityGraph(attributePaths = { "responsable", "solicitud", "ordenesCompra", "actividades", "actividades.siguientes",
+                        "actividades.adjuntos" })
         Optional<Proyecto> findBySolicitudId(Long solicitudId);
 
         /**
@@ -76,19 +73,13 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
         /**
          * Busca proyectos por responsable.
          */
-        @EntityGraph(attributePaths = { "proceso", "responsable", "solicitud" })
+        @EntityGraph(attributePaths = { "responsable", "solicitud" })
         List<Proyecto> findByResponsableId(Long responsableId);
-
-        /**
-         * Busca proyectos por proceso.
-         */
-        @EntityGraph(attributePaths = { "proceso", "responsable", "solicitud" })
-        List<Proyecto> findByProcesoId(Long procesoId);
 
         /**
          * Obtiene un proyecto con todas sus relaciones cargadas.
          */
-        @EntityGraph(attributePaths = { "proceso", "responsable", "solicitud", "etapasProyecto",
-                        "etapasProyecto.responsable" })
+        @EntityGraph(attributePaths = { "responsable", "solicitud", "ordenesCompra", "actividades", "actividades.siguientes",
+                        "actividades.adjuntos" })
         Optional<Proyecto> findWithEtapasById(Long id);
 }

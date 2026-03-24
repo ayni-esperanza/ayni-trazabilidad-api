@@ -39,16 +39,9 @@ public class ProyectoResponse {
     private Long solicitudId;
     private String solicitudNombreProyecto;
 
-    private Long procesoId;
-    private String procesoNombre;
-
     private Long responsableId;
     private String responsableNombre;
 
-    private Integer cantidadEtapas;
-    private Integer progreso;
-
-    private List<EtapaProyectoResponse> etapasProyecto;
     private FlujoProyectoResponse flujo;
 
     private LocalDateTime fechaCreacion;

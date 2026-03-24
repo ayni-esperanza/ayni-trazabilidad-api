@@ -1,7 +1,5 @@
 package com.trazabilidad.ayni.proyecto;
 
-import com.trazabilidad.ayni.proceso.Proceso;
-import com.trazabilidad.ayni.proceso.ProcesoRepository;
 import com.trazabilidad.ayni.proyecto.dto.*;
 import com.trazabilidad.ayni.shared.dto.CambiarEstadoRequest;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
@@ -10,7 +8,6 @@ import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.shared.storage.StorageUrlResolver;
-import com.trazabilidad.ayni.shared.util.JsonCodec;
 import com.trazabilidad.ayni.solicitud.Solicitud;
 import com.trazabilidad.ayni.solicitud.SolicitudRepository;
 import com.trazabilidad.ayni.usuario.Usuario;
@@ -24,9 +21,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar proyectos.
@@ -39,7 +41,6 @@ public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final SolicitudRepository solicitudRepository;
-    private final ProcesoRepository procesoRepository;
     private final UsuarioRepository usuarioRepository;
     private final StorageUrlResolver storageUrlResolver;
 
@@ -88,12 +89,11 @@ public class ProyectoService {
     public PaginatedResponse<ProyectoResumenResponse> listar(
             String search,
             EstadoProyecto estado,
-            Long procesoId,
             Long responsableId,
             Pageable pageable) {
         Pageable translatedPageable = translatePageable(pageable);
         Page<Proyecto> page = proyectoRepository.buscarConFiltros(
-                search, estado, procesoId, responsableId, translatedPageable);
+                search, estado, responsableId, translatedPageable);
 
         return PaginatedResponse.<ProyectoResumenResponse>builder()
                 .content(page.getContent().stream()
@@ -121,12 +121,9 @@ public class ProyectoService {
      * Inicia un proyecto desde una solicitud.
      * 
      * 1. Valida solicitud existe y puede iniciar proyecto (PENDIENTE o EN_PROCESO)
-     * 2. Valida proceso existe y está activo
      * 3. Valida que no exista ya un proyecto para esta solicitud
-     * 4. Genera EtapaProyectos desde las Etapas del Proceso
-     * 5. Crea Proyecto copiando datos de Solicitud
-     * 6. Cambia estado solicitud a EN_PROCESO
-     * 7. Cascade save todo
+     * 4. Crea Proyecto copiando datos de Solicitud
+     * 5. Cambia estado solicitud a EN_PROCESO
      *
      * @param request Datos para iniciar el proyecto
      * @return Proyecto creado con sus etapas
@@ -154,23 +151,6 @@ public class ProyectoService {
                     "La fecha de finalización debe ser posterior a la fecha de inicio");
         }
 
-        Proceso proceso;
-        if (request.getProcesoId() == null) {
-            proceso = procesoRepository.findByActivoTrue().stream().findFirst()
-                    .orElseThrow(() -> new BadRequestException("No existe ningún proceso activo para iniciar el proyecto"));
-        } else {
-            proceso = procesoRepository.findById(request.getProcesoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Proceso", request.getProcesoId()));
-        }
-
-        if (!proceso.getActivo()) {
-            throw new BadRequestException("El proceso seleccionado no está activo");
-        }
-
-        if (!proceso.tieneEtapas()) {
-            throw new BadRequestException("El proceso seleccionado no tiene etapas definidas");
-        }
-
         Proyecto proyecto = Proyecto.builder()
                 .nombreProyecto(solicitud.getNombreProyecto())
                 .cliente(solicitud.getCliente())
@@ -179,19 +159,15 @@ public class ProyectoService {
                 .areas(request.getAreas() != null ? request.getAreas() : solicitud.getAreas())
                 .costo(solicitud.getCosto())
                 .descripcion(solicitud.getDescripcion())
-                .ordenesCompraJson(JsonCodec.toJson(request.getOrdenesCompra()))
                 .fechaRegistro(LocalDate.now())
                 .fechaInicio(fechaInicio)
                 .fechaFinalizacion(fechaFinalizacion)
                 .solicitud(solicitud)
-                .proceso(proceso)
                 .responsable(solicitud.getResponsable())
                 .build();
 
-        proceso.getEtapasOrdenadas().forEach(etapaPlantilla -> {
-            EtapaProyecto etapaProyecto = EtapaProyectoMapper.crearDesdeEtapa(etapaPlantilla, proyecto);
-            proyecto.agregarEtapa(etapaProyecto);
-        });
+        proyecto.setOrdenesCompra(ordenesFromRequest(request.getOrdenesCompra(), proyecto));
+        proyecto.setActividades(crearActividadInicio(proyecto));
 
         if (solicitud.getEstado() == EstadoSolicitud.PENDIENTE) {
             solicitud.cambiarEstado(EstadoSolicitud.EN_PROCESO);
@@ -229,10 +205,10 @@ public class ProyectoService {
             proyecto.setAreas(request.getAreas());
         }
         if (request.getOrdenesCompra() != null) {
-            proyecto.setOrdenesCompraJson(JsonCodec.toJson(request.getOrdenesCompra()));
+            proyecto.setOrdenesCompra(ordenesFromRequest(request.getOrdenesCompra(), proyecto));
         }
         if (request.getFlujo() != null) {
-            proyecto.setFlujoJson(JsonCodec.toJson(request.getFlujo()));
+            proyecto.setActividades(mapFlujo(request.getFlujo(), proyecto));
         }
         if (request.getMotivoCancelacion() != null) {
             proyecto.setMotivoCancelacion(request.getMotivoCancelacion());
@@ -250,16 +226,6 @@ public class ProyectoService {
         if (proyecto.getFechaInicio() != null && proyecto.getFechaFinalizacion() != null
                 && proyecto.getFechaFinalizacion().isBefore(proyecto.getFechaInicio())) {
             throw new BadRequestException("La fecha de finalización debe ser posterior a la fecha de inicio");
-        }
-
-        if (request.getProcesoId() != null &&
-                (proyecto.getProceso() == null || !proyecto.getProceso().getId().equals(request.getProcesoId()))) {
-            Proceso proceso = procesoRepository.findById(request.getProcesoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Proceso", request.getProcesoId()));
-            if (!proceso.getActivo()) {
-                throw new BadRequestException("El proceso seleccionado no está activo");
-            }
-            proyecto.setProceso(proceso);
         }
 
         if (request.getResponsableId() != null
@@ -295,16 +261,11 @@ public class ProyectoService {
 
     /**
      * Finaliza un proyecto.
-     * Valida que todas las etapas estén completadas.
+     * Finaliza proyecto sin dependencia de etapas.
      */
     public ProyectoResponse finalizarProyecto(Long id) {
         Proyecto proyecto = proyectoRepository.findWithEtapasById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
-
-        if (!proyecto.puedeFinalizarse()) {
-            throw new BadRequestException(
-                    "No se puede finalizar el proyecto. Todas las etapas deben estar completadas");
-        }
 
         proyecto.cambiarEstado(EstadoProyecto.COMPLETADO);
 
@@ -333,10 +294,7 @@ public class ProyectoService {
         long cancelados = proyectoRepository.countByEstado(EstadoProyecto.CANCELADO);
         long finalizados = proyectoRepository.countByEstado(EstadoProyecto.FINALIZADO);
 
-        Double promedioProgreso = proyectoRepository.findAll().stream()
-                .mapToInt(Proyecto::calcularProgreso)
-                .average()
-                .orElse(0.0);
+        Double promedioProgreso = 0.0;
 
         return EstadisticasProyectoResponse.builder()
                 .total(total)
@@ -347,6 +305,119 @@ public class ProyectoService {
                 .finalizados(finalizados)
                 .promedioProgreso(promedioProgreso)
                 .build();
+    }
+
+    private List<OrdenCompra> ordenesFromRequest(List<OrdenCompraResponse> ordenes, Proyecto proyecto) {
+        if (ordenes == null) {
+            return new ArrayList<>();
+        }
+        return ordenes.stream()
+                .filter(oc -> oc.getNumero() != null && !oc.getNumero().isBlank())
+                .map(oc -> OrdenCompra.builder()
+                        .proyecto(proyecto)
+                        .numero(oc.getNumero())
+                        .fecha(oc.getFecha())
+                        .tipo(oc.getTipo())
+                        .numeroLicitacion(oc.getNumeroLicitacion())
+                        .numeroSolicitud(oc.getNumeroSolicitud())
+                        .total(oc.getTotal())
+                        .build())
+                .toList();
+    }
+
+    private List<ActividadProyecto> crearActividadInicio(Proyecto proyecto) {
+        ActividadProyecto inicio = ActividadProyecto.builder()
+                .proyecto(proyecto)
+                .nombre("Inicio")
+                .tipo("inicio")
+                .estadoActividad("Pendiente")
+                .fechaCambioEstado(LocalDateTime.now())
+                .build();
+        return new ArrayList<>(List.of(inicio));
+    }
+
+    private List<ActividadProyecto> mapFlujo(FlujoProyectoResponse flujo, Proyecto proyecto) {
+        if (flujo == null || flujo.getNodos() == null) {
+            return new ArrayList<>();
+        }
+
+        Map<Long, ActividadProyecto> index = new LinkedHashMap<>();
+
+        for (FlujoNodoResponse nodo : flujo.getNodos()) {
+            if (nodo.getId() == null) {
+                continue;
+            }
+
+            ActividadProyecto actividad = ActividadProyecto.builder()
+                    .proyecto(proyecto)
+                    .nombre(nodo.getNombre() != null ? nodo.getNombre() : "Actividad")
+                    .tipo(nodo.getTipo() != null ? nodo.getTipo() : "tarea")
+                    .posicionX(nodo.getPosicionX())
+                    .posicionY(nodo.getPosicionY())
+                    .estadoActividad(nodo.getEstadoActividad())
+                    .fechaCambioEstado(parseLocalDateTime(nodo.getFechaCambioEstado()))
+                    .responsableId(nodo.getResponsableId())
+                    .fechaInicio(parseLocalDate(nodo.getFechaInicio()))
+                    .fechaFin(parseLocalDate(nodo.getFechaFin()))
+                    .descripcion(nodo.getDescripcion())
+                    .adjuntos(new java.util.ArrayList<>())
+                    .siguientes(new java.util.ArrayList<>())
+                    .build();
+
+            if (nodo.getAdjuntos() != null) {
+                for (FlujoAdjuntoResponse adjunto : nodo.getAdjuntos()) {
+                    ActividadAdjunto entityAdjunto = ActividadAdjunto.builder()
+                            .actividad(actividad)
+                            .nombre(adjunto.getNombre())
+                            .tipo(adjunto.getTipo())
+                            .tamano(adjunto.getTamano())
+                            .objectKey(adjunto.getObjectKey())
+                            .dataUrl(adjunto.getDataUrl())
+                            .build();
+                    actividad.getAdjuntos().add(entityAdjunto);
+                }
+            }
+
+            index.put(nodo.getId(), actividad);
+        }
+
+        for (FlujoNodoResponse nodo : flujo.getNodos()) {
+            if (nodo.getId() == null || nodo.getSiguientesIds() == null) {
+                continue;
+            }
+            ActividadProyecto source = index.get(nodo.getId());
+            if (source == null) {
+                continue;
+            }
+            source.setSiguientes(nodo.getSiguientesIds().stream()
+                    .map(index::get)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toList()));
+        }
+
+        return new ArrayList<>(index.values());
+    }
+
+    private LocalDate parseLocalDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private LocalDateTime parseLocalDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private EstadoProyecto parseEstadoProyectoFlexible(String valorEstado) {
