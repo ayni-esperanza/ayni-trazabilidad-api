@@ -69,15 +69,34 @@ public class DataInitializer implements CommandLineRunner {
                         crearUsuarioAdmin();
                 } else {
                         log.info("Ya existen usuarios en el sistema");
-                        if (procesoRepository.count() == 0) {
-                                crearProcesos();
-                        } else {
-                                log.info("Los procesos ya existen, omitiendo creación");
-                        }
-
                 }
 
+                if (procesoRepository.count() == 0) {
+                        crearProcesos();
+                } else {
+                        log.info("Los procesos ya existen, omitiendo creación");
+                }
+
+                asegurarProcesoActivo();
+
                 log.info("Carga de datos completada exitosamente");
+        }
+
+        private void asegurarProcesoActivo() {
+                if (procesoRepository.countByActivoTrue() > 0) {
+                        return;
+                }
+
+                List<Proceso> procesos = procesoRepository.findAll();
+                if (procesos.isEmpty()) {
+                        crearProcesos();
+                        return;
+                }
+
+                Proceso proceso = procesos.get(0);
+                proceso.setActivo(true);
+                procesoRepository.save(proceso);
+                log.warn("No había procesos activos. Se activó el proceso '{}' (id={})", proceso.getNombre(), proceso.getId());
         }
 
         private void crearPermisos() {
