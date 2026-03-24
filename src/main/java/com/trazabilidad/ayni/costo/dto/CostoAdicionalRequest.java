@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * DTO de request para registrar un costo adicional.
@@ -19,15 +20,22 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CostoAdicionalRequest {
 
+    private LocalDate fecha;
+
     @NotBlank(message = "La categoría es obligatoria")
     private String categoria;
 
-    @NotBlank(message = "El tipo de gasto es obligatorio")
-    private String tipoGasto;
-
     private String descripcion;
 
-    @NotNull(message = "El monto es obligatorio")
-    @Positive(message = "El monto debe ser positivo")
-    private BigDecimal monto;
+    @NotNull(message = "La cantidad es obligatoria")
+    @Positive(message = "La cantidad debe ser positiva")
+    private BigDecimal cantidad;
+
+    @NotNull(message = "El costo unitario es obligatorio")
+    @Positive(message = "El costo unitario debe ser positivo")
+    private BigDecimal costoUnitario;
+
+    private String encargado;
+
+    private Long dependenciaActividadId;
 }

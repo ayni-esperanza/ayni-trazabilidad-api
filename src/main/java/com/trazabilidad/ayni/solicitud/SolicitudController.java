@@ -5,6 +5,7 @@ import com.trazabilidad.ayni.shared.dto.MessageResponse;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.solicitud.dto.EstadisticasSolicitudResponse;
+import com.trazabilidad.ayni.solicitud.dto.ResponsableResponse;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudRequest;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Gestionar solicitudes de proyectos.
@@ -40,7 +42,7 @@ public class SolicitudController {
     public ResponseEntity<PaginatedResponse<SolicitudResponse>> listar(
             @Parameter(description = "Búsqueda en nombre de proyecto, cliente o descripción") @RequestParam(required = false) String search,
 
-            @Parameter(description = "Filtrar por estado") @RequestParam(required = false) EstadoSolicitud estado,
+            @Parameter(description = "Filtrar por estado") @RequestParam(required = false) String estado,
 
             @Parameter(description = "Filtrar por responsable") @RequestParam(required = false) Long responsableId,
 
@@ -61,8 +63,13 @@ public class SolicitudController {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
+        EstadoSolicitud estadoFiltro = null;
+        if (estado != null && !estado.isBlank()) {
+            estadoFiltro = solicitudService.parseEstadoFlexible(estado);
+        }
+
         PaginatedResponse<SolicitudResponse> response = solicitudService.listar(
-                search, estado, responsableId, fechaDesde, fechaHasta, pageable);
+                search, estadoFiltro, responsableId, fechaDesde, fechaHasta, pageable);
 
         return ResponseEntity.ok(response);
     }
@@ -137,5 +144,11 @@ public class SolicitudController {
     @GetMapping("/estadisticas")
     public ResponseEntity<EstadisticasSolicitudResponse> obtenerEstadisticas() {
         return ResponseEntity.ok(solicitudService.obtenerEstadisticas());
+    }
+
+    @Operation(summary = "Obtener responsables para formularios")
+    @GetMapping("/responsables")
+    public ResponseEntity<List<ResponsableResponse>> obtenerResponsables() {
+        return ResponseEntity.ok(solicitudService.obtenerResponsables());
     }
 }

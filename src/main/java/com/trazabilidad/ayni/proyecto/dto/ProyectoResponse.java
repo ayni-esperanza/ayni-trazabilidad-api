@@ -23,12 +23,17 @@ public class ProyectoResponse {
     private Long id;
     private String nombreProyecto;
     private String cliente;
+    private String representante;
+    private String ubicacion;
+    private java.util.List<String> areas;
     private BigDecimal costo;
-    private String ordenCompra;
+    private java.util.List<OrdenCompraResponse> ordenesCompra;
     private String descripcion;
+    private LocalDate fechaRegistro;
     private LocalDate fechaInicio;
     private LocalDate fechaFinalizacion;
     private String estado;
+    private String motivoCancelacion;
     private Integer etapaActual;
 
     private Long solicitudId;
@@ -44,6 +49,7 @@ public class ProyectoResponse {
     private Integer progreso;
 
     private List<EtapaProyectoResponse> etapasProyecto;
+    private FlujoProyectoResponse flujo;
 
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;

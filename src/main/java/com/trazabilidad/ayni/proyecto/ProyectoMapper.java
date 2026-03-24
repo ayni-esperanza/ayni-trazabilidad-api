@@ -1,9 +1,17 @@
 package com.trazabilidad.ayni.proyecto;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.trazabilidad.ayni.proyecto.dto.FlujoAdjuntoResponse;
+import com.trazabilidad.ayni.proyecto.dto.FlujoNodoResponse;
+import com.trazabilidad.ayni.proyecto.dto.FlujoProyectoResponse;
+import com.trazabilidad.ayni.proyecto.dto.OrdenCompraResponse;
 import com.trazabilidad.ayni.proyecto.dto.ProyectoResumenResponse;
 import com.trazabilidad.ayni.proyecto.dto.ProyectoResponse;
+import com.trazabilidad.ayni.shared.util.JsonCodec;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Mapper para conversión entre entidad Proyecto y sus DTOs.
@@ -22,6 +30,10 @@ public class ProyectoMapper {
      * @return DTO de respuesta completo
      */
     public static ProyectoResponse toResponse(Proyecto proyecto) {
+        return toResponse(proyecto, objectKey -> objectKey);
+    }
+
+    public static ProyectoResponse toResponse(Proyecto proyecto, Function<String, String> publicUrlResolver) {
         if (proyecto == null)
             return null;
 
@@ -33,12 +45,17 @@ public class ProyectoMapper {
                 .id(proyecto.getId())
                 .nombreProyecto(proyecto.getNombreProyecto())
                 .cliente(proyecto.getCliente())
+                .representante(proyecto.getRepresentante())
+                .ubicacion(proyecto.getUbicacion())
+                .areas(proyecto.getAreas())
                 .costo(proyecto.getCosto())
-                .ordenCompra(proyecto.getOrdenCompra())
+                .ordenesCompra(parseOrdenesCompra(proyecto.getOrdenesCompraJson()))
                 .descripcion(proyecto.getDescripcion())
+                .fechaRegistro(proyecto.getFechaRegistro())
                 .fechaInicio(proyecto.getFechaInicio())
                 .fechaFinalizacion(proyecto.getFechaFinalizacion())
-                .estado(proyecto.getEstado().name())
+                .estado(proyecto.getEstado().getDisplayName())
+                .motivoCancelacion(proyecto.getMotivoCancelacion())
                 .etapaActual(proyecto.getEtapaActual())
                 .solicitudId(proyecto.getSolicitud() != null ? proyecto.getSolicitud().getId() : null)
                 .solicitudNombreProyecto(
@@ -50,6 +67,7 @@ public class ProyectoMapper {
                 .cantidadEtapas(proyecto.getEtapasProyecto() != null ? proyecto.getEtapasProyecto().size() : 0)
                 .progreso(proyecto.calcularProgreso())
                 .etapasProyecto(etapas)
+                .flujo(parseFlujo(proyecto.getFlujoJson(), publicUrlResolver))
                 .fechaCreacion(proyecto.getFechaCreacion())
                 .fechaActualizacion(proyecto.getFechaActualizacion())
                 .build();
@@ -71,7 +89,7 @@ public class ProyectoMapper {
                 .nombreProyecto(proyecto.getNombreProyecto())
                 .cliente(proyecto.getCliente())
                 .costo(proyecto.getCosto())
-                .estado(proyecto.getEstado().name())
+                .estado(proyecto.getEstado().getDisplayName())
                 .procesoId(proyecto.getProceso().getId())
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsable().getNombreCompleto())
@@ -91,5 +109,38 @@ public class ProyectoMapper {
         return proyectos.stream()
                 .map(ProyectoMapper::toResumen)
                 .toList();
+    }
+
+    private static List<OrdenCompraResponse> parseOrdenesCompra(String json) {
+        return JsonCodec.fromJson(json, new TypeReference<List<OrdenCompraResponse>>() {
+        }, new ArrayList<>());
+    }
+
+    private static FlujoProyectoResponse parseFlujo(String json, Function<String, String> publicUrlResolver) {
+        FlujoProyectoResponse flujo = JsonCodec.fromJson(json, FlujoProyectoResponse.class,
+                FlujoProyectoResponse.builder().nodos(new ArrayList<>()).build());
+
+        if (flujo.getNodos() == null) {
+            flujo.setNodos(new ArrayList<>());
+            return flujo;
+        }
+
+        flujo.getNodos().forEach(nodo -> {
+            if (nodo.getAdjuntos() == null) {
+                nodo.setAdjuntos(new ArrayList<>());
+                return;
+            }
+
+            nodo.setAdjuntos(nodo.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
+                    .nombre(adjunto.getNombre())
+                    .tipo(adjunto.getTipo())
+                    .tamano(adjunto.getTamano())
+                    .objectKey(adjunto.getObjectKey())
+                    .dataUrl(adjunto.getDataUrl())
+                    .url(adjunto.getObjectKey() != null ? publicUrlResolver.apply(adjunto.getObjectKey()) : null)
+                    .build()).toList());
+        });
+
+        return flujo;
     }
 }

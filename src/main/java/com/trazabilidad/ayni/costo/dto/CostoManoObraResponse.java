@@ -19,10 +19,11 @@ public class CostoManoObraResponse {
 
     private Long id;
     private String trabajador;
-    private String funcion;
-    private BigDecimal horasTrabajadas;
-    private BigDecimal costoHora;
+    private String cargo;
+    private BigDecimal diasTrabajando;
+    private BigDecimal costoPorDia;
     private BigDecimal costoTotal;
+    private Long dependenciaActividadId;
     private Long proyectoId;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;

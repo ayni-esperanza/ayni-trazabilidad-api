@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Entidad CostoMaterial - Costos de materiales utilizados en un proyecto.
@@ -46,6 +47,18 @@ public class CostoMaterial extends Auditable {
 
     @Column(name = "costo_total", precision = 12, scale = 2)
     private BigDecimal costoTotal;
+
+    @Column(name = "fecha")
+    private LocalDate fecha;
+
+    @Column(name = "nro_comprobante", length = 100)
+    private String nroComprobante;
+
+    @Column(name = "encargado", length = 200)
+    private String encargado;
+
+    @Column(name = "dependencia_actividad_id")
+    private Long dependenciaActividadId;
 
     // Relación
     @ManyToOne(fetch = FetchType.LAZY)

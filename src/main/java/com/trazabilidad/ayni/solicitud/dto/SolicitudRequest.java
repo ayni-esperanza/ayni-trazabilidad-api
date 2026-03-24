@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * DTO de entrada para crear o actualizar una Solicitud.
@@ -32,9 +34,9 @@ public class SolicitudRequest {
     @Size(max = 200, message = "El representante no puede exceder 200 caracteres")
     private String representante;
 
-    @NotNull(message = "El costo es obligatorio")
+    @Builder.Default
     @Min(value = 0, message = "El costo debe ser cero o mayor")
-    private BigDecimal costo;
+    private BigDecimal costo = BigDecimal.ZERO;
 
     @NotNull(message = "El responsable es obligatorio")
     private Long responsableId;
@@ -44,6 +46,9 @@ public class SolicitudRequest {
 
     @Size(max = 500, message = "La ubicación no puede exceder 500 caracteres")
     private String ubicacion;
+
+    @Builder.Default
+    private List<String> areas = new ArrayList<>();
 
     private LocalDate fechaInicio;
 

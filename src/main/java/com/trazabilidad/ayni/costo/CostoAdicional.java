@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Entidad CostoAdicional - Costos adicionales diversos en un proyecto.
@@ -44,6 +45,29 @@ public class CostoAdicional extends Auditable {
     @NotNull(message = "El monto es obligatorio")
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
+
+    @Column(name = "fecha")
+    private LocalDate fecha;
+
+    @Column(name = "cantidad", precision = 10, scale = 2)
+    private BigDecimal cantidad;
+
+    @Column(name = "costo_unitario", precision = 12, scale = 2)
+    private BigDecimal costoUnitario;
+
+    @Column(name = "encargado", length = 200)
+    private String encargado;
+
+    @Column(name = "dependencia_actividad_id")
+    private Long dependenciaActividadId;
+
+    @PrePersist
+    @PreUpdate
+    private void calcularMonto() {
+        if (cantidad != null && costoUnitario != null) {
+            this.monto = cantidad.multiply(costoUnitario);
+        }
+    }
 
     // Relación
     @ManyToOne(fetch = FetchType.LAZY)

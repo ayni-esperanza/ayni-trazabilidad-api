@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO de respuesta para Solicitud.
@@ -28,6 +29,7 @@ public class SolicitudResponse {
     private String responsableNombre;
     private String descripcion;
     private String ubicacion;
+    private List<String> areas;
     private LocalDate fechaSolicitud;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;

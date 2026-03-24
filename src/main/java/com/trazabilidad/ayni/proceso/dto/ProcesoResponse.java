@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,13 +17,8 @@ import java.util.List;
 public class ProcesoResponse {
 
     private Long id;
-    private String proceso;
+    private String nombre;
     private String area;
     private Boolean activo;
-
-    /**
-     * Lista completa de etapas ordenadas.
-     */
-    @Builder.Default
-    private List<String> flujo = new ArrayList<>();
+    private List<EtapaSimpleResponse> etapas;
 }

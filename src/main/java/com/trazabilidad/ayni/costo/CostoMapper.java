@@ -27,11 +27,15 @@ public class CostoMapper {
 
         return CostoMaterialResponse.builder()
                 .id(entity.getId())
-                .material(entity.getMaterial())
+                .fecha(entity.getFecha())
+                .nroComprobante(entity.getNroComprobante())
+                .producto(entity.getMaterial())
                 .unidad(entity.getUnidad())
                 .cantidad(entity.getCantidad())
                 .costoUnitario(entity.getCostoUnitario())
                 .costoTotal(entity.getCostoTotal())
+                .encargado(entity.getEncargado())
+                .dependenciaActividadId(entity.getDependenciaActividadId())
                 .proyectoId(entity.getProyecto() != null ? entity.getProyecto().getId() : null)
                 .fechaCreacion(entity.getFechaCreacion())
                 .fechaActualizacion(entity.getFechaActualizacion())
@@ -59,10 +63,14 @@ public class CostoMapper {
         }
 
         return CostoMaterial.builder()
-                .material(request.getMaterial())
+                .fecha(request.getFecha())
+                .nroComprobante(request.getNroComprobante())
+                .material(request.getProducto())
                 .unidad(request.getUnidad())
                 .cantidad(request.getCantidad())
                 .costoUnitario(request.getCostoUnitario())
+                .encargado(request.getEncargado())
+                .dependenciaActividadId(request.getDependenciaActividadId())
                 .proyecto(proyecto)
                 .build();
     }
@@ -75,10 +83,14 @@ public class CostoMapper {
             return;
         }
 
-        entity.setMaterial(request.getMaterial());
+        entity.setFecha(request.getFecha());
+        entity.setNroComprobante(request.getNroComprobante());
+        entity.setMaterial(request.getProducto());
         entity.setUnidad(request.getUnidad());
         entity.setCantidad(request.getCantidad());
         entity.setCostoUnitario(request.getCostoUnitario());
+        entity.setEncargado(request.getEncargado());
+        entity.setDependenciaActividadId(request.getDependenciaActividadId());
     }
 
     // ==================== CostoManoObra ====================
@@ -94,10 +106,11 @@ public class CostoMapper {
         return CostoManoObraResponse.builder()
                 .id(entity.getId())
                 .trabajador(entity.getTrabajador())
-                .funcion(entity.getFuncion())
-                .horasTrabajadas(entity.getHorasTrabajadas())
-                .costoHora(entity.getCostoHora())
+                .cargo(entity.getFuncion())
+                .diasTrabajando(entity.getHorasTrabajadas())
+                .costoPorDia(entity.getCostoHora())
                 .costoTotal(entity.getCostoTotal())
+                .dependenciaActividadId(entity.getDependenciaActividadId())
                 .proyectoId(entity.getProyecto() != null ? entity.getProyecto().getId() : null)
                 .fechaCreacion(entity.getFechaCreacion())
                 .fechaActualizacion(entity.getFechaActualizacion())
@@ -126,9 +139,10 @@ public class CostoMapper {
 
         return CostoManoObra.builder()
                 .trabajador(request.getTrabajador())
-                .funcion(request.getFuncion())
-                .horasTrabajadas(request.getHorasTrabajadas())
-                .costoHora(request.getCostoHora())
+                .funcion(request.getCargo())
+                .horasTrabajadas(request.getDiasTrabajando())
+                .costoHora(request.getCostoPorDia())
+                .dependenciaActividadId(request.getDependenciaActividadId())
                 .proyecto(proyecto)
                 .build();
     }
@@ -142,9 +156,10 @@ public class CostoMapper {
         }
 
         entity.setTrabajador(request.getTrabajador());
-        entity.setFuncion(request.getFuncion());
-        entity.setHorasTrabajadas(request.getHorasTrabajadas());
-        entity.setCostoHora(request.getCostoHora());
+        entity.setFuncion(request.getCargo());
+        entity.setHorasTrabajadas(request.getDiasTrabajando());
+        entity.setCostoHora(request.getCostoPorDia());
+        entity.setDependenciaActividadId(request.getDependenciaActividadId());
     }
 
     // ==================== CostoAdicional ====================
@@ -159,10 +174,14 @@ public class CostoMapper {
 
         return CostoAdicionalResponse.builder()
                 .id(entity.getId())
+                .fecha(entity.getFecha())
                 .categoria(entity.getCategoria())
-                .tipoGasto(entity.getTipoGasto())
                 .descripcion(entity.getDescripcion())
-                .monto(entity.getMonto())
+                .cantidad(entity.getCantidad())
+                .costoUnitario(entity.getCostoUnitario())
+                .costoTotal(entity.getMonto())
+                .encargado(entity.getEncargado())
+                .dependenciaActividadId(entity.getDependenciaActividadId())
                 .proyectoId(entity.getProyecto() != null ? entity.getProyecto().getId() : null)
                 .fechaCreacion(entity.getFechaCreacion())
                 .fechaActualizacion(entity.getFechaActualizacion())
@@ -190,10 +209,15 @@ public class CostoMapper {
         }
 
         return CostoAdicional.builder()
+                .fecha(request.getFecha())
                 .categoria(request.getCategoria())
-                .tipoGasto(request.getTipoGasto())
+                .tipoGasto(request.getCategoria())
                 .descripcion(request.getDescripcion())
-                .monto(request.getMonto())
+                .cantidad(request.getCantidad())
+                .costoUnitario(request.getCostoUnitario())
+                .monto(request.getCantidad().multiply(request.getCostoUnitario()))
+                .encargado(request.getEncargado())
+                .dependenciaActividadId(request.getDependenciaActividadId())
                 .proyecto(proyecto)
                 .build();
     }
@@ -206,9 +230,14 @@ public class CostoMapper {
             return;
         }
 
+        entity.setFecha(request.getFecha());
         entity.setCategoria(request.getCategoria());
-        entity.setTipoGasto(request.getTipoGasto());
+        entity.setTipoGasto(request.getCategoria());
         entity.setDescripcion(request.getDescripcion());
-        entity.setMonto(request.getMonto());
+        entity.setCantidad(request.getCantidad());
+        entity.setCostoUnitario(request.getCostoUnitario());
+        entity.setMonto(request.getCantidad().multiply(request.getCostoUnitario()));
+        entity.setEncargado(request.getEncargado());
+        entity.setDependenciaActividadId(request.getDependenciaActividadId());
     }
 }

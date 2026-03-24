@@ -6,6 +6,7 @@ import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.solicitud.dto.EstadisticasSolicitudResponse;
+import com.trazabilidad.ayni.solicitud.dto.ResponsableResponse;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudRequest;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudResponse;
 import com.trazabilidad.ayni.usuario.Usuario;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Servicio para gestionar solicitudes.
@@ -179,7 +182,7 @@ public class SolicitudService {
 
                 EstadoSolicitud nuevoEstado;
                 try {
-                        nuevoEstado = EstadoSolicitud.valueOf(request.getNuevoEstado());
+                        nuevoEstado = parseEstadoFlexible(request.getNuevoEstado());
                 } catch (IllegalArgumentException e) {
                         throw new BadRequestException("Estado inválido: " + request.getNuevoEstado());
                 }
@@ -226,5 +229,32 @@ public class SolicitudService {
                                 .canceladas(canceladas)
                                 .finalizadas(finalizadas)
                                 .build();
+        }
+
+        @Transactional(readOnly = true)
+        public List<ResponsableResponse> obtenerResponsables() {
+                return usuarioRepository.findByActivoTrue().stream()
+                                .map(usuario -> ResponsableResponse.builder()
+                                                .id(usuario.getId())
+                                                .nombre(usuario.getNombreCompleto().trim())
+                                                .cargo(usuario.getCargo())
+                                                .email(usuario.getEmail())
+                                                .build())
+                                .toList();
+        }
+
+        public EstadoSolicitud parseEstadoFlexible(String valorEstado) {
+                if (valorEstado == null || valorEstado.isBlank()) {
+                        throw new IllegalArgumentException("Estado vacío");
+                }
+
+                String normalizado = valorEstado.trim();
+
+                return Arrays.stream(EstadoSolicitud.values())
+                                .filter(estado -> estado.name().equalsIgnoreCase(normalizado)
+                                                || estado.getDisplayName().equalsIgnoreCase(normalizado)
+                                                || estado.name().equalsIgnoreCase(normalizado.replace(" ", "_")))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalArgumentException("Estado inválido: " + valorEstado));
         }
 }

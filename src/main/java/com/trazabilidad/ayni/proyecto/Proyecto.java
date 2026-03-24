@@ -62,9 +62,33 @@ public class Proyecto extends Auditable {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costo;
 
-    @Size(max = 100, message = "La orden de compra no puede exceder 100 caracteres")
-    @Column(name = "orden_compra", length = 100)
-    private String ordenCompra;
+    @Size(max = 200, message = "El representante no puede exceder 200 caracteres")
+    @Column(length = 200)
+    private String representante;
+
+    @Size(max = 500, message = "La ubicación no puede exceder 500 caracteres")
+    @Column(length = 500)
+    private String ubicacion;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "proyecto_areas", joinColumns = @JoinColumn(name = "proyecto_id"))
+    @Column(name = "area", length = 100)
+    @Builder.Default
+    private List<String> areas = new ArrayList<>();
+
+    @Lob
+    @Column(name = "ordenes_compra_json", columnDefinition = "TEXT")
+    private String ordenesCompraJson;
+
+    @Lob
+    @Column(name = "flujo_json", columnDefinition = "TEXT")
+    private String flujoJson;
+
+    @Column(name = "motivo_cancelacion", length = 500)
+    private String motivoCancelacion;
+
+    @Column(name = "fecha_registro")
+    private LocalDate fechaRegistro;
 
     @Column(columnDefinition = "TEXT")
     private String descripcion;
@@ -81,7 +105,7 @@ public class Proyecto extends Auditable {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private EstadoProyecto estado = EstadoProyecto.PENDIENTE;
+    private EstadoProyecto estado = EstadoProyecto.EN_PROCESO;
 
     @Builder.Default
     @Column(name = "etapa_actual", nullable = false)

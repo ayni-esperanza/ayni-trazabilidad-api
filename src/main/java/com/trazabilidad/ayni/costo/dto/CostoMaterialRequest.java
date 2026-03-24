@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * DTO de request para registrar un costo de material.
@@ -19,8 +20,12 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CostoMaterialRequest {
 
-    @NotBlank(message = "El material es obligatorio")
-    private String material;
+    private LocalDate fecha;
+
+    private String nroComprobante;
+
+    @NotBlank(message = "El producto es obligatorio")
+    private String producto;
 
     private String unidad;
 
@@ -31,4 +36,8 @@ public class CostoMaterialRequest {
     @NotNull(message = "El costo unitario es obligatorio")
     @Positive(message = "El costo unitario debe ser positivo")
     private BigDecimal costoUnitario;
+
+    private String encargado;
+
+    private Long dependenciaActividadId;
 }

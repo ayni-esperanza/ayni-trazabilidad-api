@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -18,11 +19,15 @@ import java.time.LocalDateTime;
 public class CostoMaterialResponse {
 
     private Long id;
-    private String material;
+    private LocalDate fecha;
+    private String nroComprobante;
+    private String producto;
     private String unidad;
     private BigDecimal cantidad;
     private BigDecimal costoUnitario;
     private BigDecimal costoTotal;
+    private String encargado;
+    private Long dependenciaActividadId;
     private Long proyectoId;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;

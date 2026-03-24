@@ -9,6 +9,8 @@ import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
+import com.trazabilidad.ayni.shared.storage.StorageUrlResolver;
+import com.trazabilidad.ayni.shared.util.JsonCodec;
 import com.trazabilidad.ayni.solicitud.Solicitud;
 import com.trazabilidad.ayni.solicitud.SolicitudRepository;
 import com.trazabilidad.ayni.usuario.Usuario;
@@ -21,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +41,7 @@ public class ProyectoService {
     private final SolicitudRepository solicitudRepository;
     private final ProcesoRepository procesoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final StorageUrlResolver storageUrlResolver;
 
     // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
     private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
@@ -109,7 +114,7 @@ public class ProyectoService {
         Proyecto proyecto = proyectoRepository.findWithEtapasById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
 
-        return ProyectoMapper.toResponse(proyecto);
+        return ProyectoMapper.toResponse(proyecto, storageUrlResolver::resolvePublicUrl);
     }
 
     /**
@@ -140,31 +145,44 @@ public class ProyectoService {
                     "Ya existe un proyecto asociado a esta solicitud");
         }
 
-        Proceso proceso = procesoRepository.findById(request.getProcesoId())
-                .orElseThrow(() -> new EntityNotFoundException("Proceso", request.getProcesoId()));
+        LocalDate fechaInicio = request.getFechaInicio() != null ? request.getFechaInicio() : LocalDate.now();
+        LocalDate fechaFinalizacion = request.getFechaFinalizacion() != null ? request.getFechaFinalizacion()
+                : fechaInicio.plusMonths(1);
+
+        if (fechaFinalizacion.isBefore(fechaInicio)) {
+            throw new BadRequestException(
+                    "La fecha de finalización debe ser posterior a la fecha de inicio");
+        }
+
+        Proceso proceso;
+        if (request.getProcesoId() == null) {
+            proceso = procesoRepository.findByActivoTrue().stream().findFirst()
+                    .orElseThrow(() -> new BadRequestException("No existe ningún proceso activo para iniciar el proyecto"));
+        } else {
+            proceso = procesoRepository.findById(request.getProcesoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Proceso", request.getProcesoId()));
+        }
 
         if (!proceso.getActivo()) {
             throw new BadRequestException("El proceso seleccionado no está activo");
         }
 
         if (!proceso.tieneEtapas()) {
-            throw new BadRequestException(
-                    "El proceso seleccionado no tiene etapas definidas");
-        }
-
-        if (request.getFechaFinalizacion().isBefore(request.getFechaInicio())) {
-            throw new BadRequestException(
-                    "La fecha de finalización debe ser posterior a la fecha de inicio");
+            throw new BadRequestException("El proceso seleccionado no tiene etapas definidas");
         }
 
         Proyecto proyecto = Proyecto.builder()
                 .nombreProyecto(solicitud.getNombreProyecto())
                 .cliente(solicitud.getCliente())
+                .representante(request.getRepresentante() != null ? request.getRepresentante() : solicitud.getRepresentante())
+                .ubicacion(request.getUbicacion() != null ? request.getUbicacion() : solicitud.getUbicacion())
+                .areas(request.getAreas() != null ? request.getAreas() : solicitud.getAreas())
                 .costo(solicitud.getCosto())
                 .descripcion(solicitud.getDescripcion())
-                .ordenCompra(request.getOrdenCompra())
-                .fechaInicio(request.getFechaInicio())
-                .fechaFinalizacion(request.getFechaFinalizacion())
+                .ordenesCompraJson(JsonCodec.toJson(request.getOrdenesCompra()))
+                .fechaRegistro(LocalDate.now())
+                .fechaInicio(fechaInicio)
+                .fechaFinalizacion(fechaFinalizacion)
                 .solicitud(solicitud)
                 .proceso(proceso)
                 .responsable(solicitud.getResponsable())
@@ -182,7 +200,7 @@ public class ProyectoService {
 
         Proyecto saved = proyectoRepository.save(proyecto);
 
-        return ProyectoMapper.toResponse(saved);
+        return ProyectoMapper.toResponse(saved, storageUrlResolver::resolvePublicUrl);
     }
 
     /**
@@ -201,8 +219,23 @@ public class ProyectoService {
         if (request.getDescripcion() != null) {
             proyecto.setDescripcion(request.getDescripcion());
         }
-        if (request.getOrdenCompra() != null) {
-            proyecto.setOrdenCompra(request.getOrdenCompra());
+        if (request.getRepresentante() != null) {
+            proyecto.setRepresentante(request.getRepresentante());
+        }
+        if (request.getUbicacion() != null) {
+            proyecto.setUbicacion(request.getUbicacion());
+        }
+        if (request.getAreas() != null) {
+            proyecto.setAreas(request.getAreas());
+        }
+        if (request.getOrdenesCompra() != null) {
+            proyecto.setOrdenesCompraJson(JsonCodec.toJson(request.getOrdenesCompra()));
+        }
+        if (request.getFlujo() != null) {
+            proyecto.setFlujoJson(JsonCodec.toJson(request.getFlujo()));
+        }
+        if (request.getMotivoCancelacion() != null) {
+            proyecto.setMotivoCancelacion(request.getMotivoCancelacion());
         }
         if (request.getCosto() != null) {
             proyecto.setCosto(request.getCosto());
@@ -237,7 +270,7 @@ public class ProyectoService {
         }
 
         Proyecto updated = proyectoRepository.save(proyecto);
-        return ProyectoMapper.toResponse(updated);
+        return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
 
     /**
@@ -249,7 +282,7 @@ public class ProyectoService {
 
         EstadoProyecto nuevoEstado;
         try {
-            nuevoEstado = EstadoProyecto.valueOf(request.getNuevoEstado());
+            nuevoEstado = parseEstadoProyectoFlexible(request.getNuevoEstado());
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Estado inválido: " + request.getNuevoEstado());
         }
@@ -257,7 +290,7 @@ public class ProyectoService {
         proyecto.cambiarEstado(nuevoEstado);
         Proyecto updated = proyectoRepository.save(proyecto);
 
-        return ProyectoMapper.toResponse(updated);
+        return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
 
     /**
@@ -285,7 +318,7 @@ public class ProyectoService {
 
         Proyecto updated = proyectoRepository.save(proyecto);
 
-        return ProyectoMapper.toResponse(updated);
+        return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
 
     /**
@@ -314,5 +347,19 @@ public class ProyectoService {
                 .finalizados(finalizados)
                 .promedioProgreso(promedioProgreso)
                 .build();
+    }
+
+    private EstadoProyecto parseEstadoProyectoFlexible(String valorEstado) {
+        if (valorEstado == null || valorEstado.isBlank()) {
+            throw new IllegalArgumentException("Estado vacío");
+        }
+
+        String normalizado = valorEstado.trim();
+        return Arrays.stream(EstadoProyecto.values())
+                .filter(estado -> estado.name().equalsIgnoreCase(normalizado)
+                        || estado.getDisplayName().equalsIgnoreCase(normalizado)
+                        || estado.name().equalsIgnoreCase(normalizado.replace(" ", "_")))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Estado inválido: " + valorEstado));
     }
 }

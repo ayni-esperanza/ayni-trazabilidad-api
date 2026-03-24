@@ -17,6 +17,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidad que representa una Solicitud de proyecto.
@@ -63,6 +65,12 @@ public class Solicitud extends Auditable {
     @Column(length = 500)
     private String ubicacion;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "solicitud_areas", joinColumns = @JoinColumn(name = "solicitud_id"))
+    @Column(name = "area", length = 100)
+    @Builder.Default
+    private List<String> areas = new ArrayList<>();
+
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
@@ -106,7 +114,8 @@ public class Solicitud extends Auditable {
      * @return true si estado es PENDIENTE
      */
     public boolean esEditable() {
-        return this.estado == EstadoSolicitud.PENDIENTE;
+        return this.estado == EstadoSolicitud.PENDIENTE ||
+                this.estado == EstadoSolicitud.EN_PROCESO;
     }
 
     /**

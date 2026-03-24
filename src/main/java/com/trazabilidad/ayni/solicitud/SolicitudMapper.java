@@ -4,6 +4,7 @@ import com.trazabilidad.ayni.solicitud.dto.SolicitudRequest;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudResponse;
 import com.trazabilidad.ayni.usuario.Usuario;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -36,10 +37,11 @@ public class SolicitudMapper {
                 .responsableNombre(solicitud.getResponsable().getNombreCompleto())
                 .descripcion(solicitud.getDescripcion())
                 .ubicacion(solicitud.getUbicacion())
+                .areas(solicitud.getAreas())
                 .fechaSolicitud(solicitud.getFechaSolicitud())
                 .fechaInicio(solicitud.getFechaInicio())
                 .fechaFin(solicitud.getFechaFin())
-                .estado(solicitud.getEstado().name())
+                .estado(solicitud.getEstado().getDisplayName())
                 .tieneProyecto(false)
                 .proyectoId(null)
                 .fechaCreacion(solicitud.getFechaCreacion())
@@ -62,12 +64,14 @@ public class SolicitudMapper {
                 .nombreProyecto(request.getNombreProyecto())
                 .cliente(request.getCliente())
                 .representante(request.getRepresentante())
-                .costo(request.getCosto())
+                .costo(request.getCosto() != null ? request.getCosto() : BigDecimal.ZERO)
                 .responsable(responsable)
                 .descripcion(request.getDescripcion())
                 .ubicacion(request.getUbicacion())
+                .areas(request.getAreas())
                 .fechaInicio(request.getFechaInicio())
                 .fechaFin(request.getFechaFin())
+                .estado(com.trazabilidad.ayni.shared.enums.EstadoSolicitud.EN_PROCESO)
                 .build();
     }
 
@@ -90,6 +94,7 @@ public class SolicitudMapper {
         solicitud.setResponsable(responsable);
         solicitud.setDescripcion(request.getDescripcion());
         solicitud.setUbicacion(request.getUbicacion());
+        solicitud.setAreas(request.getAreas());
         solicitud.setFechaInicio(request.getFechaInicio());
         solicitud.setFechaFin(request.getFechaFin());
     }

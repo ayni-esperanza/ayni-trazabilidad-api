@@ -46,6 +46,9 @@ public class CostoManoObra extends Auditable {
     @Column(name = "costo_total", precision = 12, scale = 2)
     private BigDecimal costoTotal;
 
+    @Column(name = "dependencia_actividad_id")
+    private Long dependenciaActividadId;
+
     // Relación
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "proyecto_id", nullable = false)

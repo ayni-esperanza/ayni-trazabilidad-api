@@ -4,8 +4,6 @@ import com.trazabilidad.ayni.proceso.dto.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Mapper para conversión entre entidades Proceso/Etapa y sus DTOs.
@@ -30,11 +28,15 @@ public class ProcesoMapper {
 
         return ProcesoResponse.builder()
                 .id(proceso.getId())
-                .proceso(proceso.getNombre())
+                .nombre(proceso.getNombre())
                 .area(proceso.getArea())
                 .activo(proceso.getActivo())
-                .flujo(proceso.getEtapasOrdenadas().stream()
-                        .map(Etapa::getNombre)
+                .etapas(proceso.getEtapasOrdenadas().stream()
+                        .map(etapa -> EtapaSimpleResponse.builder()
+                                .id(etapa.getId())
+                                .nombre(etapa.getNombre())
+                                .orden(etapa.getOrden())
+                                .build())
                         .toList())
                 .build();
     }
@@ -115,9 +117,13 @@ public class ProcesoMapper {
 
         return ProcesoSimpleResponse.builder()
                 .id(proceso.getId())
-                .proceso(proceso.getNombre())
-                .flujo(proceso.getEtapasOrdenadas().stream()
-                        .map(Etapa::getNombre)
+                .nombre(proceso.getNombre())
+                .etapas(proceso.getEtapasOrdenadas().stream()
+                        .map(etapa -> EtapaSimpleResponse.builder()
+                                .id(etapa.getId())
+                                .nombre(etapa.getNombre())
+                                .orden(etapa.getOrden())
+                                .build())
                         .toList())
                 .build();
     }
