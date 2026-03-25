@@ -67,4 +67,12 @@ public class ActividadProyecto {
     @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ActividadAdjunto> adjuntos = new ArrayList<>();
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public String getEstadoActividad() {
+        return estadoActividad;
+    }
 }
