@@ -322,7 +322,7 @@ public class ProyectoService {
                         .numeroSolicitud(oc.getNumeroSolicitud())
                         .total(oc.getTotal())
                         .build())
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private List<ActividadProyecto> crearActividadInicio(Proyecto proyecto) {
