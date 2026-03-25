@@ -166,8 +166,8 @@ public class ProyectoService {
                 .responsable(solicitud.getResponsable())
                 .build();
 
-        proyecto.setOrdenesCompra(ordenesFromRequest(request.getOrdenesCompra(), proyecto));
-        proyecto.setActividades(crearActividadInicio(proyecto));
+        replaceOrdenesCompra(proyecto, ordenesFromRequest(request.getOrdenesCompra(), proyecto));
+        replaceActividades(proyecto, crearActividadInicio(proyecto));
 
         if (solicitud.getEstado() == EstadoSolicitud.PENDIENTE) {
             solicitud.cambiarEstado(EstadoSolicitud.EN_PROCESO);
@@ -205,10 +205,10 @@ public class ProyectoService {
             proyecto.setAreas(request.getAreas());
         }
         if (request.getOrdenesCompra() != null) {
-            proyecto.setOrdenesCompra(ordenesFromRequest(request.getOrdenesCompra(), proyecto));
+            replaceOrdenesCompra(proyecto, ordenesFromRequest(request.getOrdenesCompra(), proyecto));
         }
         if (request.getFlujo() != null) {
-            proyecto.setActividades(mapFlujo(request.getFlujo(), proyecto));
+            replaceActividades(proyecto, mapFlujo(request.getFlujo(), proyecto));
         }
         if (request.getMotivoCancelacion() != null) {
             proyecto.setMotivoCancelacion(request.getMotivoCancelacion());
@@ -396,6 +396,28 @@ public class ProyectoService {
         }
 
         return new ArrayList<>(index.values());
+    }
+
+    private void replaceActividades(Proyecto proyecto, List<ActividadProyecto> nuevasActividades) {
+        if (proyecto.getActividades() == null) {
+            proyecto.setActividades(new ArrayList<>());
+        }
+
+        proyecto.getActividades().clear();
+        if (nuevasActividades != null && !nuevasActividades.isEmpty()) {
+            proyecto.getActividades().addAll(nuevasActividades);
+        }
+    }
+
+    private void replaceOrdenesCompra(Proyecto proyecto, List<OrdenCompra> nuevasOrdenes) {
+        if (proyecto.getOrdenesCompra() == null) {
+            proyecto.setOrdenesCompra(new ArrayList<>());
+        }
+
+        proyecto.getOrdenesCompra().clear();
+        if (nuevasOrdenes != null && !nuevasOrdenes.isEmpty()) {
+            proyecto.getOrdenesCompra().addAll(nuevasOrdenes);
+        }
     }
 
     private LocalDate parseLocalDate(String value) {
