@@ -20,11 +20,10 @@ public class ActividadProyectoRequest {
     private String nombre;
 
     private String tipo;
-    private Integer posicionX;
-    private Integer posicionY;
     private String estadoActividad;
     private String fechaCambioEstado;
     private Long responsableId;
+    private String responsableNombre;
     private String fechaInicio;
     private String fechaFin;
     private String descripcion;

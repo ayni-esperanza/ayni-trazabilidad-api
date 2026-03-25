@@ -164,6 +164,7 @@ public class ProyectoService {
                 .fechaFinalizacion(fechaFinalizacion)
                 .solicitud(solicitud)
                 .responsable(solicitud.getResponsable())
+                .responsableNombre(solicitud.getResponsable() != null ? solicitud.getResponsable().getNombreCompleto() : null)
                 .build();
 
         replaceOrdenesCompra(proyecto, ordenesFromRequest(request.getOrdenesCompra(), proyecto));
@@ -227,6 +228,7 @@ public class ProyectoService {
             Usuario responsable = usuarioRepository.findById(request.getResponsableId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
             proyecto.setResponsable(responsable);
+            proyecto.setResponsableNombre(responsable.getNombreCompleto());
         }
 
         Proyecto updated = proyectoRepository.save(proyecto);
@@ -331,15 +333,21 @@ public class ProyectoService {
                 continue;
             }
 
+            Usuario responsableActividad = null;
+            if (nodo.getResponsableId() != null) {
+                responsableActividad = usuarioRepository.findById(nodo.getResponsableId())
+                        .orElseThrow(() -> new EntityNotFoundException("Usuario", nodo.getResponsableId()));
+            }
+
             ActividadProyecto actividad = ActividadProyecto.builder()
                     .proyecto(proyecto)
                     .nombre(nodo.getNombre() != null ? nodo.getNombre() : "Actividad")
                     .tipo(nodo.getTipo() != null ? nodo.getTipo() : "tarea")
-                    .posicionX(nodo.getPosicionX())
-                    .posicionY(nodo.getPosicionY())
                     .estadoActividad(nodo.getEstadoActividad())
                     .fechaCambioEstado(parseLocalDateTime(nodo.getFechaCambioEstado()))
-                    .responsableId(nodo.getResponsableId())
+                    .responsable(responsableActividad)
+                    .responsableNombre(nodo.getResponsableNombre() != null ? nodo.getResponsableNombre()
+                            : (responsableActividad != null ? responsableActividad.getNombreCompleto() : null))
                     .fechaInicio(parseLocalDate(nodo.getFechaInicio()))
                     .fechaFin(parseLocalDate(nodo.getFechaFin()))
                     .descripcion(nodo.getDescripcion())

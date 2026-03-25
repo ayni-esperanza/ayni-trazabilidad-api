@@ -49,6 +49,8 @@ public class DataInitializer implements CommandLineRunner {
         if (usuarioRepository.count() == 0) {
             crearUsuarioAdmin();
         }
+
+        crearResponsablesIniciales();
     }
 
     private void crearPermisos() {
@@ -193,5 +195,40 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
 
         usuarioRepository.save(admin);
+    }
+
+    private void crearResponsablesIniciales() {
+        Rol rolIngeniero = rolRepository.findByNombre(Constants.Roles.INGENIERO)
+                .orElseThrow(() -> new RuntimeException("Rol INGENIERO no encontrado"));
+
+        List<UsuarioBase> iniciales = List.of(
+                new UsuarioBase("Rolando", "Herrera", "rolando.herrera@ayni.com", "rolando.herrera"),
+                new UsuarioBase("Alex", "Marquina", "alex.marquina@ayni.com", "alex.marquina"),
+                new UsuarioBase("Darling", "Mendoza", "darling.mendoza@ayni.com", "darling.mendoza"),
+                new UsuarioBase("Rodolfo", "Vargas", "rodolfo.vargas@ayni.com", "rodolfo.vargas"),
+                new UsuarioBase("Gian", "Juarez", "gian.juarez@ayni.com", "gian.juarez")
+        );
+
+        for (UsuarioBase base : iniciales) {
+            if (usuarioRepository.existsByEmail(base.email()) || usuarioRepository.existsByUsername(base.username())) {
+                continue;
+            }
+
+            Usuario usuario = Usuario.builder()
+                    .nombre(base.nombre())
+                    .apellido(base.apellido())
+                    .email(base.email())
+                    .username(base.username())
+                    .password(passwordEncoder.encode("Cambio123*"))
+                    .cargo("Responsable de AYNI")
+                    .activo(true)
+                    .roles(new HashSet<>(Set.of(rolIngeniero)))
+                    .build();
+
+            usuarioRepository.save(usuario);
+        }
+    }
+
+    private record UsuarioBase(String nombre, String apellido, String email, String username) {
     }
 }

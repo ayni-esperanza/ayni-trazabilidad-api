@@ -1,5 +1,6 @@
 package com.trazabilidad.ayni.proyecto;
 
+import com.trazabilidad.ayni.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,20 +36,21 @@ public class ActividadProyecto {
     @Column(name = "tipo", nullable = false, length = 20)
     private String tipo;
 
-    @Column(name = "posicion_x")
-    private Integer posicionX;
-
-    @Column(name = "posicion_y")
-    private Integer posicionY;
-
     @Column(name = "estado_actividad", length = 50)
     private String estadoActividad;
 
     @Column(name = "fecha_cambio_estado")
     private LocalDateTime fechaCambioEstado;
 
-    @Column(name = "responsable_id")
-    private Long responsableId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsable_id")
+    private Usuario responsable;
+
+    @Column(name = "responsable_nombre", length = 200)
+    private String responsableNombre;
+
+    @Column(name = "fecha_registro")
+    private LocalDateTime fechaRegistro;
 
     @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
@@ -74,5 +76,9 @@ public class ActividadProyecto {
 
     public String getEstadoActividad() {
         return estadoActividad;
+    }
+
+    public Long getResponsableId() {
+        return responsable != null ? responsable.getId() : null;
     }
 }

@@ -105,6 +105,9 @@ public class Proyecto extends Auditable {
     @NotNull(message = "El responsable es obligatorio")
     private Usuario responsable;
 
+    @Column(name = "responsable_nombre", length = 200)
+    private String responsableNombre;
+
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrdenCompra> ordenesCompra = new ArrayList<>();

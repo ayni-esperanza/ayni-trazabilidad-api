@@ -2,12 +2,16 @@ package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
+import com.trazabilidad.ayni.usuario.Usuario;
+import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +23,12 @@ import java.util.Objects;
 @Transactional
 public class ActividadProyectoService {
 
+    private static final DateTimeFormatter DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_TIME_SECONDS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final ProyectoRepository proyectoRepository;
     private final ActividadProyectoRepository actividadProyectoRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Transactional(readOnly = true)
     public List<FlujoNodoResponse> listarPorProyecto(Long proyectoId) {
@@ -73,13 +81,15 @@ public class ActividadProyectoService {
 
         actividad.setNombre(request.getNombre());
         actividad.setTipo(request.getTipo() != null ? request.getTipo() : actividad.getTipo());
-        actividad.setPosicionX(request.getPosicionX());
-        actividad.setPosicionY(request.getPosicionY());
         actividad.setEstadoActividad(request.getEstadoActividad());
         actividad.setFechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), actividad.getFechaCambioEstado()));
-        actividad.setResponsableId(request.getResponsableId());
-        actividad.setFechaInicio(parseDate(request.getFechaInicio(), null));
-        actividad.setFechaFin(parseDate(request.getFechaFin(), null));
+        Usuario responsable = resolveResponsable(request.getResponsableId());
+        actividad.setResponsable(responsable);
+        actividad.setResponsableNombre(resolveResponsableNombre(responsable, request.getResponsableNombre()));
+        LocalDate fechaRegistro = parseDateFlexible(request.getFechaInicio(), actividad.getFechaInicio());
+        actividad.setFechaRegistro(parseDateTimeFlexible(request.getFechaInicio(), actividad.getFechaRegistro()));
+        actividad.setFechaInicio(fechaRegistro);
+        actividad.setFechaFin(parseDate(request.getFechaFin(), actividad.getFechaFin()));
         actividad.setDescripcion(request.getDescripcion());
 
         replaceAdjuntos(actividad, request.getAdjuntos());
@@ -128,12 +138,13 @@ public class ActividadProyectoService {
 
             actividad.setNombre(request.getNombre());
             actividad.setTipo(request.getTipo() != null ? request.getTipo() : actividad.getTipo());
-            actividad.setPosicionX(request.getPosicionX());
-            actividad.setPosicionY(request.getPosicionY());
             actividad.setEstadoActividad(request.getEstadoActividad());
             actividad.setFechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), actividad.getFechaCambioEstado()));
-            actividad.setResponsableId(request.getResponsableId());
-            actividad.setFechaInicio(parseDate(request.getFechaInicio(), actividad.getFechaInicio()));
+            Usuario responsable = resolveResponsable(request.getResponsableId());
+            actividad.setResponsable(responsable);
+            actividad.setResponsableNombre(resolveResponsableNombre(responsable, request.getResponsableNombre()));
+            actividad.setFechaRegistro(parseDateTimeFlexible(request.getFechaInicio(), actividad.getFechaRegistro()));
+            actividad.setFechaInicio(parseDateFlexible(request.getFechaInicio(), actividad.getFechaInicio()));
             actividad.setFechaFin(parseDate(request.getFechaFin(), actividad.getFechaFin()));
             actividad.setDescripcion(request.getDescripcion());
             replaceAdjuntos(actividad, request.getAdjuntos());
@@ -185,16 +196,18 @@ public class ActividadProyectoService {
     }
 
     private ActividadProyecto buildActividadEntity(ActividadProyectoRequest request, Proyecto proyecto) {
+        Usuario responsable = resolveResponsable(request.getResponsableId());
+
         ActividadProyecto actividad = ActividadProyecto.builder()
                 .proyecto(proyecto)
                 .nombre(request.getNombre())
                 .tipo(request.getTipo() != null ? request.getTipo() : "tarea")
-                .posicionX(request.getPosicionX())
-                .posicionY(request.getPosicionY())
                 .estadoActividad(request.getEstadoActividad())
                 .fechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), LocalDateTime.now()))
-                .responsableId(request.getResponsableId())
-                .fechaInicio(parseDate(request.getFechaInicio(), null))
+                .responsable(responsable)
+                .responsableNombre(resolveResponsableNombre(responsable, request.getResponsableNombre()))
+                .fechaRegistro(parseDateTimeFlexible(request.getFechaInicio(), LocalDateTime.now()))
+                .fechaInicio(parseDateFlexible(request.getFechaInicio(), null))
                 .fechaFin(parseDate(request.getFechaFin(), null))
                 .descripcion(request.getDescripcion())
                 .adjuntos(new ArrayList<>())
@@ -216,15 +229,84 @@ public class ActividadProyectoService {
         }
     }
 
-    private LocalDateTime parseDateTime(String value, LocalDateTime defaultValue) {
+    private LocalDate parseDateFlexible(String value, LocalDate defaultValue) {
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
+
         try {
-            return LocalDateTime.parse(value);
-        } catch (Exception ex) {
+            return LocalDate.parse(value);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            if (value.length() >= 10) {
+                return LocalDate.parse(value.substring(0, 10));
+            }
+        } catch (Exception ignored) {
+        }
+
+        return defaultValue;
+    }
+
+    private LocalDateTime parseDateTimeFlexible(String value, LocalDateTime defaultValue) {
+        if (value == null || value.isBlank()) {
             return defaultValue;
         }
+
+        String normalized = value.trim();
+
+        try {
+            return LocalDateTime.parse(normalized);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            return OffsetDateTime.parse(normalized).toLocalDateTime();
+        } catch (Exception ignored) {
+        }
+
+        try {
+            return LocalDateTime.parse(normalized, DATE_TIME_SECONDS);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            return LocalDateTime.parse(normalized, DATE_TIME_MINUTES);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            LocalDate date = parseDateFlexible(normalized, null);
+            if (date != null) {
+                return date.atStartOfDay();
+            }
+        } catch (Exception ignored) {
+        }
+
+        return defaultValue;
+    }
+
+    private LocalDateTime parseDateTime(String value, LocalDateTime defaultValue) {
+        return parseDateTimeFlexible(value, defaultValue);
+    }
+
+    private Usuario resolveResponsable(Long responsableId) {
+        if (responsableId == null) {
+            return null;
+        }
+        return usuarioRepository.findById(responsableId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario", responsableId));
+    }
+
+    private String resolveResponsableNombre(Usuario responsable, String responsableNombre) {
+        if (responsableNombre != null && !responsableNombre.isBlank()) {
+            return responsableNombre.trim();
+        }
+        if (responsable == null) {
+            return null;
+        }
+        return responsable.getNombreCompleto();
     }
 
     private void validarProyectoExiste(Long proyectoId) {
@@ -242,11 +324,10 @@ public class ActividadProyectoService {
                 .id(actividad.getId())
                 .nombre(actividad.getNombre())
                 .tipo(actividad.getTipo())
-                .posicionX(actividad.getPosicionX())
-                .posicionY(actividad.getPosicionY())
                 .estadoActividad(actividad.getEstadoActividad())
                 .fechaCambioEstado(actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
-                .responsableId(actividad.getResponsableId())
+                .responsableId(actividad.getResponsable() != null ? actividad.getResponsable().getId() : null)
+                .responsableNombre(actividad.getResponsableNombre())
                 .fechaInicio(actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null)
                 .fechaFin(actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null)
                 .descripcion(actividad.getDescripcion())
