@@ -52,8 +52,6 @@ management:
 app:
   data-initializer:
     enabled: true # Cargar datos de prueba en desarrollo
-  schema-cleanup:
-    enabled: true
   admin:
     username: admin
     password: admin123 # Password de desarrollo (OK aquí)
