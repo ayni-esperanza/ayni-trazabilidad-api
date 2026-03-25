@@ -167,7 +167,7 @@ public class ProyectoService {
                 .build();
 
         replaceOrdenesCompra(proyecto, ordenesFromRequest(request.getOrdenesCompra(), proyecto));
-        replaceActividades(proyecto, crearActividadInicio(proyecto));
+        replaceActividades(proyecto, new ArrayList<>());
 
         if (solicitud.getEstado() == EstadoSolicitud.PENDIENTE) {
             solicitud.cambiarEstado(EstadoSolicitud.EN_PROCESO);
@@ -317,17 +317,6 @@ public class ProyectoService {
                         .total(oc.getTotal())
                         .build())
                 .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private List<ActividadProyecto> crearActividadInicio(Proyecto proyecto) {
-        ActividadProyecto inicio = ActividadProyecto.builder()
-                .proyecto(proyecto)
-                .nombre("Inicio")
-                .tipo("inicio")
-                .estadoActividad("Pendiente")
-                .fechaCambioEstado(LocalDateTime.now())
-                .build();
-        return new ArrayList<>(List.of(inicio));
     }
 
     private List<ActividadProyecto> mapFlujo(FlujoProyectoResponse flujo, Proyecto proyecto) {
