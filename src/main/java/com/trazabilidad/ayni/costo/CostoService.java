@@ -67,9 +67,12 @@ public class CostoService {
     /**
      * Actualiza un costo de material existente.
      */
-    public CostoMaterialResponse actualizarMaterial(Long id, CostoMaterialRequest request) {
+    public CostoMaterialResponse actualizarMaterial(Long proyectoId, Long id, CostoMaterialRequest request) {
         CostoMaterial material = costoMaterialRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoMaterial", id));
+        if (!material.getProyecto().getId().equals(proyectoId)) {
+            throw new EntityNotFoundException("CostoMaterial", id);
+        }
 
         CostoMapper.updateMaterialEntity(material, request);
         material = costoMaterialRepository.save(material);
@@ -80,11 +83,13 @@ public class CostoService {
     /**
      * Elimina un costo de material.
      */
-    public void eliminarMaterial(Long id) {
-        if (!costoMaterialRepository.existsById(id)) {
+    public void eliminarMaterial(Long proyectoId, Long id) {
+        CostoMaterial material = costoMaterialRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("CostoMaterial", id));
+        if (!material.getProyecto().getId().equals(proyectoId)) {
             throw new EntityNotFoundException("CostoMaterial", id);
         }
-        costoMaterialRepository.deleteById(id);
+        costoMaterialRepository.delete(material);
     }
 
     // ==================== CostoManoObra ====================
@@ -129,9 +134,12 @@ public class CostoService {
     /**
      * Actualiza un costo de mano de obra existente.
      */
-    public CostoManoObraResponse actualizarManoObra(Long id, CostoManoObraRequest request) {
+    public CostoManoObraResponse actualizarManoObra(Long proyectoId, Long id, CostoManoObraRequest request) {
         CostoManoObra manoObra = costoManoObraRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoManoObra", id));
+        if (!manoObra.getProyecto().getId().equals(proyectoId)) {
+            throw new EntityNotFoundException("CostoManoObra", id);
+        }
 
         CostoMapper.updateManoObraEntity(manoObra, request);
         manoObra = costoManoObraRepository.save(manoObra);
@@ -142,11 +150,13 @@ public class CostoService {
     /**
      * Elimina un costo de mano de obra.
      */
-    public void eliminarManoObra(Long id) {
-        if (!costoManoObraRepository.existsById(id)) {
+    public void eliminarManoObra(Long proyectoId, Long id) {
+        CostoManoObra manoObra = costoManoObraRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("CostoManoObra", id));
+        if (!manoObra.getProyecto().getId().equals(proyectoId)) {
             throw new EntityNotFoundException("CostoManoObra", id);
         }
-        costoManoObraRepository.deleteById(id);
+        costoManoObraRepository.delete(manoObra);
     }
 
     // ==================== CostoAdicional ====================
@@ -200,9 +210,12 @@ public class CostoService {
     /**
      * Actualiza un costo adicional existente.
      */
-    public CostoAdicionalResponse actualizarAdicional(Long id, CostoAdicionalRequest request) {
+    public CostoAdicionalResponse actualizarAdicional(Long proyectoId, Long id, CostoAdicionalRequest request) {
         CostoAdicional adicional = costoAdicionalRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoAdicional", id));
+        if (!adicional.getProyecto().getId().equals(proyectoId)) {
+            throw new EntityNotFoundException("CostoAdicional", id);
+        }
 
         CostoMapper.updateAdicionalEntity(adicional, request);
         adicional = costoAdicionalRepository.save(adicional);
@@ -213,11 +226,13 @@ public class CostoService {
     /**
      * Elimina un costo adicional.
      */
-    public void eliminarAdicional(Long id) {
-        if (!costoAdicionalRepository.existsById(id)) {
+    public void eliminarAdicional(Long proyectoId, Long id) {
+        CostoAdicional adicional = costoAdicionalRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("CostoAdicional", id));
+        if (!adicional.getProyecto().getId().equals(proyectoId)) {
             throw new EntityNotFoundException("CostoAdicional", id);
         }
-        costoAdicionalRepository.deleteById(id);
+        costoAdicionalRepository.delete(adicional);
     }
 
     // ==================== Resumen ====================

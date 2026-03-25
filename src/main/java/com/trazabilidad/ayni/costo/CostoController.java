@@ -93,7 +93,7 @@ public class CostoController {
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID del material") @PathVariable Long id,
             @Valid @RequestBody CostoMaterialRequest request) {
-        CostoMaterialResponse response = costoService.actualizarMaterial(id, request);
+        CostoMaterialResponse response = costoService.actualizarMaterial(proyectoId, id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -106,7 +106,7 @@ public class CostoController {
     public ResponseEntity<Void> eliminarMaterial(
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID del material") @PathVariable Long id) {
-        costoService.eliminarMaterial(id);
+        costoService.eliminarMaterial(proyectoId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -163,7 +163,7 @@ public class CostoController {
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID de la mano de obra") @PathVariable Long id,
             @Valid @RequestBody CostoManoObraRequest request) {
-        CostoManoObraResponse response = costoService.actualizarManoObra(id, request);
+        CostoManoObraResponse response = costoService.actualizarManoObra(proyectoId, id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -176,7 +176,7 @@ public class CostoController {
     public ResponseEntity<Void> eliminarManoObra(
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID de la mano de obra") @PathVariable Long id) {
-        costoService.eliminarManoObra(id);
+        costoService.eliminarManoObra(proyectoId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -245,7 +245,7 @@ public class CostoController {
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID del costo adicional") @PathVariable Long id,
             @Valid @RequestBody CostoAdicionalRequest request) {
-        CostoAdicionalResponse response = costoService.actualizarAdicional(id, request);
+        CostoAdicionalResponse response = costoService.actualizarAdicional(proyectoId, id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -258,7 +258,7 @@ public class CostoController {
     public ResponseEntity<Void> eliminarAdicional(
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId,
             @Parameter(description = "ID del costo adicional") @PathVariable Long id) {
-        costoService.eliminarAdicional(id);
+        costoService.eliminarAdicional(proyectoId, id);
         return ResponseEntity.noContent().build();
     }
 }
