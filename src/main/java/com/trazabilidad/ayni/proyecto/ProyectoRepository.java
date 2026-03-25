@@ -56,7 +56,7 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
         /**
          * Busca proyecto por ID de solicitud.
          */
-        @EntityGraph(attributePaths = { "responsable", "solicitud", "ordenesCompra", "actividades" })
+        @EntityGraph(attributePaths = { "responsable", "solicitud" })
         Optional<Proyecto> findBySolicitudId(Long solicitudId);
 
         /**
@@ -78,6 +78,6 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
         /**
          * Obtiene un proyecto con todas sus relaciones cargadas.
          */
-        @EntityGraph(attributePaths = { "responsable", "solicitud", "ordenesCompra", "actividades" })
+        @EntityGraph(attributePaths = { "responsable", "solicitud" })
         Optional<Proyecto> findWithEtapasById(Long id);
 }
