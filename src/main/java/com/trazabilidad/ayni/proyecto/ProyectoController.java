@@ -20,12 +20,12 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Gestionar proyectos.
- * Iniciar proyectos y gestionar sus etapas.
+ * Iniciar proyectos y gestionar su informacion principal.
  */
 @RestController
 @RequestMapping("/api/v1/proyectos")
 @RequiredArgsConstructor
-@Tag(name = "Proyectos (v1)", description = "Gestión de proyectos y sus etapas")
+@Tag(name = "Proyectos (v1)", description = "Gestión de proyectos")
 public class ProyectoController {
 
     private final ProyectoService proyectoService;
@@ -58,7 +58,7 @@ public class ProyectoController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Obtener proyecto por ID con todas sus etapas")
+    @Operation(summary = "Obtener proyecto por ID con su detalle")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Proyecto encontrado"),
             @ApiResponse(responseCode = "404", description = "Proyecto no encontrado")
@@ -72,7 +72,7 @@ public class ProyectoController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Proyecto iniciado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos o solicitud en estado incorrecto"),
-            @ApiResponse(responseCode = "404", description = "Solicitud o proceso no encontrado")
+            @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
     })
     @PostMapping("/iniciar")
     public ResponseEntity<ProyectoResponse> iniciarProyecto(

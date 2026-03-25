@@ -204,12 +204,6 @@ public class ProyectoService {
         if (request.getAreas() != null) {
             proyecto.setAreas(request.getAreas());
         }
-        if (request.getOrdenesCompra() != null) {
-            replaceOrdenesCompra(proyecto, ordenesFromRequest(request.getOrdenesCompra(), proyecto));
-        }
-        if (request.getFlujo() != null) {
-            replaceActividades(proyecto, mapFlujo(request.getFlujo(), proyecto));
-        }
         if (request.getMotivoCancelacion() != null) {
             proyecto.setMotivoCancelacion(request.getMotivoCancelacion());
         }

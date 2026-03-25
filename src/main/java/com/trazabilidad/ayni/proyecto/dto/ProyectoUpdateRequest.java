@@ -22,8 +22,6 @@ public class ProyectoUpdateRequest {
     private String ubicacion;
     private List<String> areas;
     private String descripcion;
-    private List<OrdenCompraResponse> ordenesCompra;
-    private FlujoProyectoResponse flujo;
     private String motivoCancelacion;
 
     @PositiveOrZero(message = "El costo debe ser cero o mayor")
