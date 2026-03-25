@@ -21,6 +21,12 @@ spring:
   flyway:
     enabled: false # No usar Flyway en desarrollo, permitir Hibernate gestionar schema
 
+  devtools:
+    restart:
+      log-condition-evaluation-delta: false
+
+debug: true
+
 # ==================== LOGGING DESARROLLO ====================
 logging:
   level:
