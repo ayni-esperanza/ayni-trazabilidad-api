@@ -64,7 +64,7 @@ public class Proyecto extends Auditable {
     @Column(length = 500)
     private String ubicacion;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "proyecto_areas", joinColumns = @JoinColumn(name = "proyecto_id"))
     @Column(name = "area", length = 100)
     @Builder.Default

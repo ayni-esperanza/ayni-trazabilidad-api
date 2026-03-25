@@ -65,7 +65,7 @@ public class Solicitud extends Auditable {
     @Column(length = 500)
     private String ubicacion;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "solicitud_areas", joinColumns = @JoinColumn(name = "solicitud_id"))
     @Column(name = "area", length = 100)
     @Builder.Default
