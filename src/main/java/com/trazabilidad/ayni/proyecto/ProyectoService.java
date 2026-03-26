@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -421,11 +422,20 @@ public class ProyectoService {
             return new ArrayList<>();
         }
 
+        Set<Long> idsPersistidos = proyecto.getComentariosAdicionalesActividad() == null
+                ? Set.of()
+                : proyecto.getComentariosAdicionalesActividad().stream()
+                        .map(ComentarioActividad::getId)
+                        .filter(java.util.Objects::nonNull)
+                        .collect(Collectors.toSet());
+
         return comentarios.stream()
                 .filter(item -> item.getActividadId() != null)
                 .map(item -> {
+                    Long idSeguro = (item.getId() != null && idsPersistidos.contains(item.getId())) ? item.getId() : null;
+
                     ComentarioActividad comentario = ComentarioActividad.builder()
-                            .id(item.getId())
+                            .id(idSeguro)
                             .proyecto(proyecto)
                             .actividadId(item.getActividadId())
                             .nombre(item.getNombre())
