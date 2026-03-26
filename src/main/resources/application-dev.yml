@@ -22,6 +22,8 @@ spring:
     enabled: false # No usar Flyway en desarrollo, permitir Hibernate gestionar schema
 
   devtools:
+    livereload:
+      enabled: false
     restart:
       log-condition-evaluation-delta: false
 
