@@ -116,6 +116,10 @@ public class Proyecto extends Auditable {
     @Builder.Default
     private List<ActividadProyecto> actividades = new ArrayList<>();
 
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ComentarioActividad> comentariosAdicionalesActividad = new ArrayList<>();
+
     // Relaciones con Costos (para navegación bidireccional)
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore

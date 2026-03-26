@@ -58,6 +58,7 @@ public class ProyectoMapper {
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsableNombre() != null ? proyecto.getResponsableNombre() : proyecto.getResponsable().getNombreCompleto())
                 .flujo(mapFlujo(proyecto.getActividades(), publicUrlResolver))
+                .comentariosAdicionalesActividad(mapComentarios(proyecto.getComentariosAdicionalesActividad(), publicUrlResolver))
                 .fechaCreacion(proyecto.getFechaCreacion())
                 .fechaActualizacion(proyecto.getFechaActualizacion())
                 .build();
@@ -153,5 +154,42 @@ public class ProyectoMapper {
                 .toList();
 
         return FlujoProyectoResponse.builder().nodos(nodos).build();
+    }
+
+    private static List<com.trazabilidad.ayni.proyecto.dto.ComentarioActividadResponse> mapComentarios(
+            List<ComentarioActividad> comentarios,
+            Function<String, String> publicUrlResolver) {
+        if (comentarios == null) {
+            return new ArrayList<>();
+        }
+
+        return comentarios.stream()
+                .sorted(Comparator.comparing(ComentarioActividad::getId))
+                .map(comentario -> com.trazabilidad.ayni.proyecto.dto.ComentarioActividadResponse.builder()
+                        .id(comentario.getId())
+                        .actividadId(comentario.getActividadId())
+                        .nombre(comentario.getNombre())
+                        .texto(comentario.getTexto())
+                        .autorCuenta(comentario.getAutorCuenta())
+                        .fechaComentario(comentario.getFechaComentario() != null ? comentario.getFechaComentario().toString() : null)
+                        .estadoActividad(comentario.getEstadoActividad())
+                        .responsableId(comentario.getResponsableId())
+                        .fechaInicio(comentario.getFechaInicio() != null ? comentario.getFechaInicio().toString() : null)
+                        .fechaFin(comentario.getFechaFin() != null ? comentario.getFechaFin().toString() : null)
+                        .descripcion(comentario.getDescripcion())
+                        .adjuntos(comentario.getAdjuntos() != null
+                                ? comentario.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
+                                        .nombre(adjunto.getNombre())
+                                        .tipo(adjunto.getTipo())
+                                        .tamano(adjunto.getTamano())
+                                        .objectKey(adjunto.getObjectKey())
+                                        .dataUrl(adjunto.getDataUrl())
+                                        .url(adjunto.getObjectKey() != null
+                                                ? publicUrlResolver.apply(adjunto.getObjectKey())
+                                                : null)
+                                        .build()).toList()
+                                : new ArrayList<>())
+                        .build())
+                .toList();
     }
 }

@@ -32,4 +32,6 @@ public class ProyectoUpdateRequest {
     private LocalDate fechaFinalizacion;
 
     private Long responsableId;
+
+    private List<ComentarioActividadRequest> comentariosAdicionalesActividad;
 }

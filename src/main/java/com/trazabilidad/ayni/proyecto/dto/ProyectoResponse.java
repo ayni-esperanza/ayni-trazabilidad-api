@@ -44,6 +44,8 @@ public class ProyectoResponse {
 
     private FlujoProyectoResponse flujo;
 
+    private List<ComentarioActividadResponse> comentariosAdicionalesActividad;
+
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 }

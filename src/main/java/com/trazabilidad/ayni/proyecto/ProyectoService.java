@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -231,6 +232,10 @@ public class ProyectoService {
             proyecto.setResponsableNombre(responsable.getNombreCompleto());
         }
 
+        if (request.getComentariosAdicionalesActividad() != null) {
+            replaceComentarios(proyecto, comentariosFromRequest(request.getComentariosAdicionalesActividad(), proyecto));
+        }
+
         Proyecto updated = proyectoRepository.save(proyecto);
         return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
@@ -411,6 +416,59 @@ public class ProyectoService {
         }
     }
 
+    private List<ComentarioActividad> comentariosFromRequest(List<ComentarioActividadRequest> comentarios, Proyecto proyecto) {
+        if (comentarios == null) {
+            return new ArrayList<>();
+        }
+
+        return comentarios.stream()
+                .filter(item -> item.getActividadId() != null)
+                .map(item -> {
+                    ComentarioActividad comentario = ComentarioActividad.builder()
+                            .id(item.getId())
+                            .proyecto(proyecto)
+                            .actividadId(item.getActividadId())
+                            .nombre(item.getNombre())
+                            .texto(item.getTexto() != null ? item.getTexto() : item.getDescripcion())
+                            .autorCuenta(item.getAutorCuenta())
+                            .fechaComentario(parseLocalDateTimeFlexible(item.getFechaComentario()))
+                            .estadoActividad(item.getEstadoActividad())
+                            .responsableId(item.getResponsableId())
+                            .fechaInicio(parseLocalDate(item.getFechaInicio()))
+                            .fechaFin(parseLocalDate(item.getFechaFin()))
+                            .descripcion(item.getDescripcion() != null ? item.getDescripcion() : item.getTexto())
+                            .adjuntos(new ArrayList<>())
+                            .build();
+
+                    if (item.getAdjuntos() != null) {
+                        for (ActividadAdjuntoRequest adjunto : item.getAdjuntos()) {
+                            comentario.getAdjuntos().add(ComentarioActividadAdjunto.builder()
+                                    .comentario(comentario)
+                                    .nombre(adjunto.getNombre())
+                                    .tipo(adjunto.getTipo())
+                                    .tamano(adjunto.getTamano())
+                                    .objectKey(adjunto.getObjectKey())
+                                    .dataUrl(adjunto.getDataUrl())
+                                    .build());
+                        }
+                    }
+
+                    return comentario;
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private void replaceComentarios(Proyecto proyecto, List<ComentarioActividad> nuevosComentarios) {
+        if (proyecto.getComentariosAdicionalesActividad() == null) {
+            proyecto.setComentariosAdicionalesActividad(new ArrayList<>());
+        }
+
+        proyecto.getComentariosAdicionalesActividad().clear();
+        if (nuevosComentarios != null && !nuevosComentarios.isEmpty()) {
+            proyecto.getComentariosAdicionalesActividad().addAll(nuevosComentarios);
+        }
+    }
+
     private LocalDate parseLocalDate(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -431,6 +489,24 @@ public class ProyectoService {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private LocalDateTime parseLocalDateTimeFlexible(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return LocalDateTime.parse(value);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            return OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (Exception ignored) {
+        }
+
+        return null;
     }
 
     private EstadoProyecto parseEstadoProyectoFlexible(String valorEstado) {
