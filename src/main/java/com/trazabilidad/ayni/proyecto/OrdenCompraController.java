@@ -41,4 +41,10 @@ public class OrdenCompraController {
         ordenCompraService.eliminar(proyectoId, ordenId);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping
+    public ResponseEntity<List<OrdenCompraResponse>> reemplazarTodas(@PathVariable Long proyectoId,
+            @Valid @RequestBody List<OrdenCompraRequest> requests) {
+        return ResponseEntity.ok(ordenCompraService.reemplazarTodas(proyectoId, requests));
+    }
 }

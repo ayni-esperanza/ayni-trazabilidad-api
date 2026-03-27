@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Long> {
     List<OrdenCompra> findByProyectoId(Long proyectoId);
     Optional<OrdenCompra> findByProyectoIdAndId(Long proyectoId, Long id);
+
+    void deleteByProyectoId(Long proyectoId);
 }

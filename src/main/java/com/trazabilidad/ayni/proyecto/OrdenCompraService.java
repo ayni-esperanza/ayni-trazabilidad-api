@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -58,6 +59,33 @@ public class OrdenCompraService {
         OrdenCompra entity = ordenCompraRepository.findByProyectoIdAndId(proyectoId, ordenId)
                 .orElseThrow(() -> new EntityNotFoundException("OrdenCompra", ordenId));
         ordenCompraRepository.delete(entity);
+    }
+
+    public List<OrdenCompraResponse> reemplazarTodas(Long proyectoId, List<OrdenCompraRequest> requests) {
+        Proyecto proyecto = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));
+
+        ordenCompraRepository.deleteByProyectoId(proyectoId);
+
+        List<OrdenCompra> nuevas = new ArrayList<>();
+        for (OrdenCompraRequest request : requests) {
+            OrdenCompra entity = OrdenCompra.builder()
+                    .proyecto(proyecto)
+                    .numero(request.getNumero())
+                    .fecha(request.getFecha())
+                    .tipo(request.getTipo())
+                    .numeroLicitacion(request.getNumeroLicitacion())
+                    .numeroSolicitud(request.getNumeroSolicitud())
+                    .total(request.getTotal())
+                    .build();
+            nuevas.add(entity);
+        }
+
+        if (!nuevas.isEmpty()) {
+            ordenCompraRepository.saveAll(nuevas);
+        }
+
+        return ordenCompraRepository.findByProyectoId(proyectoId).stream().map(this::toResponse).toList();
     }
 
     private void validarProyectoExiste(Long proyectoId) {
