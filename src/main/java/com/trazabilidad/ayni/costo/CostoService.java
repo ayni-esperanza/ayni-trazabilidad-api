@@ -23,6 +23,7 @@ public class CostoService {
     private final CostoMaterialRepository costoMaterialRepository;
     private final CostoManoObraRepository costoManoObraRepository;
     private final CostoAdicionalRepository costoAdicionalRepository;
+    private final CostoAdicionalCategoriaRepository costoAdicionalCategoriaRepository;
     private final ProyectoRepository proyectoRepository;
 
     // ==================== CostoMaterial ====================
@@ -177,7 +178,58 @@ public class CostoService {
     @Transactional(readOnly = true)
     public List<String> obtenerCategorias(Long proyectoId) {
         validarProyectoExiste(proyectoId);
-        return costoAdicionalRepository.findDistinctCategoriasByProyectoId(proyectoId);
+        List<String> categoriasItems = costoAdicionalRepository.findDistinctCategoriasByProyectoId(proyectoId);
+        List<String> categoriasPersistidas = costoAdicionalCategoriaRepository.findByProyectoIdOrderByNombreAsc(proyectoId)
+                .stream()
+                .map(CostoAdicionalCategoria::getNombre)
+                .toList();
+
+        return java.util.stream.Stream.concat(categoriasPersistidas.stream(), categoriasItems.stream())
+                .filter(nombre -> nombre != null && !nombre.isBlank())
+                .map(String::trim)
+                .distinct()
+                .sorted(String::compareToIgnoreCase)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CostoAdicionalCategoriaResponse> obtenerCategoriasPersistidas(Long proyectoId) {
+        validarProyectoExiste(proyectoId);
+        return costoAdicionalCategoriaRepository.findByProyectoIdOrderByNombreAsc(proyectoId).stream()
+                .map(categoria -> CostoAdicionalCategoriaResponse.builder()
+                        .id(categoria.getId())
+                        .nombre(categoria.getNombre())
+                        .build())
+                .toList();
+    }
+
+    public CostoAdicionalCategoriaResponse registrarCategoria(Long proyectoId, CostoAdicionalCategoriaRequest request) {
+        Proyecto proyecto = obtenerProyecto(proyectoId);
+        String nombre = request.getNombre().trim();
+
+        CostoAdicionalCategoria categoria = costoAdicionalCategoriaRepository
+                .findByProyectoIdAndNombreIgnoreCase(proyectoId, nombre)
+                .orElseGet(() -> costoAdicionalCategoriaRepository.save(CostoAdicionalCategoria.builder()
+                        .proyecto(proyecto)
+                        .nombre(nombre)
+                        .build()));
+
+        return CostoAdicionalCategoriaResponse.builder()
+                .id(categoria.getId())
+                .nombre(categoria.getNombre())
+                .build();
+    }
+
+    public void eliminarCategoria(Long proyectoId, Long categoriaId) {
+        CostoAdicionalCategoria categoria = costoAdicionalCategoriaRepository.findByIdAndProyectoId(categoriaId, proyectoId)
+                .orElseThrow(() -> new EntityNotFoundException("CostoAdicionalCategoria", categoriaId));
+
+        List<CostoAdicional> relacionados = costoAdicionalRepository.findByProyectoIdAndCategoria(proyectoId, categoria.getNombre());
+        if (!relacionados.isEmpty()) {
+            costoAdicionalRepository.deleteAll(relacionados);
+        }
+
+        costoAdicionalCategoriaRepository.delete(categoria);
     }
 
     /**

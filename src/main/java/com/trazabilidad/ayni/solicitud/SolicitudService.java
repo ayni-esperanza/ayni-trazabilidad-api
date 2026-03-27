@@ -9,6 +9,8 @@ import com.trazabilidad.ayni.solicitud.dto.EstadisticasSolicitudResponse;
 import com.trazabilidad.ayni.solicitud.dto.ResponsableResponse;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudRequest;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudResponse;
+import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.proyecto.ProyectoService;
 import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,8 @@ public class SolicitudService {
 
         private final SolicitudRepository solicitudRepository;
         private final UsuarioRepository usuarioRepository;
+        private final ProyectoRepository proyectoRepository;
+        private final ProyectoService proyectoService;
 
         // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
         private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
@@ -205,6 +209,9 @@ public class SolicitudService {
                         throw new BadRequestException(
                                         "Solo se pueden eliminar solicitudes en estado PENDIENTE");
                 }
+
+                proyectoRepository.findBySolicitudId(id)
+                                .ifPresent(proyecto -> proyectoService.eliminarProyecto(proyecto.getId()));
 
                 solicitudRepository.delete(solicitud);
         }

@@ -1,6 +1,7 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
+import com.trazabilidad.ayni.costo.CostoAdicionalCategoriaRepository;
 import com.trazabilidad.ayni.shared.dto.CambiarEstadoRequest;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
@@ -44,6 +45,7 @@ public class ProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CostoAdicionalCategoriaRepository costoAdicionalCategoriaRepository;
     private final StorageUrlResolver storageUrlResolver;
 
     // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
@@ -282,6 +284,40 @@ public class ProyectoService {
         Proyecto updated = proyectoRepository.save(proyecto);
 
         return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
+    }
+
+    public ProyectoResponse cancelarProyecto(Long id, String motivo) {
+        Proyecto proyecto = proyectoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
+
+        proyecto.setMotivoCancelacion(motivo != null ? motivo.trim() : null);
+        proyecto.cambiarEstado(EstadoProyecto.CANCELADO);
+
+        if (proyecto.getSolicitud() != null) {
+            Solicitud solicitud = proyecto.getSolicitud();
+            if (solicitud.getEstado() == EstadoSolicitud.PENDIENTE || solicitud.getEstado() == EstadoSolicitud.EN_PROCESO) {
+                solicitud.cambiarEstado(EstadoSolicitud.CANCELADO);
+                solicitudRepository.save(solicitud);
+            }
+        }
+
+        Proyecto updated = proyectoRepository.save(proyecto);
+        return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
+    }
+
+    public void eliminarProyecto(Long id) {
+        Proyecto proyecto = proyectoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
+
+        costoAdicionalCategoriaRepository.deleteByProyectoId(id);
+
+        if (proyecto.getSolicitud() != null) {
+            Solicitud solicitud = proyecto.getSolicitud();
+            solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+            solicitudRepository.save(solicitud);
+        }
+
+        proyectoRepository.delete(proyecto);
     }
 
     /**

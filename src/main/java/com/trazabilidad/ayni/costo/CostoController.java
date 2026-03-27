@@ -208,6 +208,30 @@ public class CostoController {
         return ResponseEntity.ok(categorias);
     }
 
+    @GetMapping("/adicionales/categorias-registro")
+    @Operation(summary = "Listar categorías persistidas", description = "Obtiene categorías de costos adicionales aunque no tengan ítems")
+    public ResponseEntity<List<CostoAdicionalCategoriaResponse>> obtenerCategoriasPersistidas(
+            @PathVariable Long proyectoId) {
+        return ResponseEntity.ok(costoService.obtenerCategoriasPersistidas(proyectoId));
+    }
+
+    @PostMapping("/adicionales/categorias-registro")
+    @Operation(summary = "Registrar categoría adicional", description = "Crea una categoría de costos adicionales sin requerir ítems")
+    public ResponseEntity<CostoAdicionalCategoriaResponse> registrarCategoria(
+            @PathVariable Long proyectoId,
+            @Valid @RequestBody CostoAdicionalCategoriaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(costoService.registrarCategoria(proyectoId, request));
+    }
+
+    @DeleteMapping("/adicionales/categorias-registro/{categoriaId}")
+    @Operation(summary = "Eliminar categoría adicional", description = "Elimina una categoría y sus ítems relacionados")
+    public ResponseEntity<Void> eliminarCategoria(
+            @PathVariable Long proyectoId,
+            @PathVariable Long categoriaId) {
+        costoService.eliminarCategoria(proyectoId, categoriaId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/adicionales")
     @Operation(summary = "Registrar costo adicional", description = "Registra un nuevo costo adicional en el proyecto")
     @ApiResponses({

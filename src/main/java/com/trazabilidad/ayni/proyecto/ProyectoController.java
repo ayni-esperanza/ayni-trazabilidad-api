@@ -119,6 +119,21 @@ public class ProyectoController {
         return ResponseEntity.ok(proyectoService.finalizarProyecto(id));
     }
 
+    @Operation(summary = "Cancelar proyecto")
+    @PostMapping("/{id}/cancelar")
+    public ResponseEntity<ProyectoResponse> cancelarProyecto(
+            @PathVariable Long id,
+            @Valid @RequestBody CancelarProyectoRequest request) {
+        return ResponseEntity.ok(proyectoService.cancelarProyecto(id, request.getMotivo()));
+    }
+
+    @Operation(summary = "Eliminar proyecto")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProyecto(@PathVariable Long id) {
+        proyectoService.eliminarProyecto(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Obtener estadísticas de proyectos")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estadísticas calculadas")
