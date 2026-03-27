@@ -13,6 +13,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class OrdenCompraResponse {
+    private Long id;
     private String numero;
     private LocalDate fecha;
     private String tipo;

@@ -107,6 +107,7 @@ public class ProyectoMapper {
         return ordenesCompra.stream()
                 .sorted(Comparator.comparing(OrdenCompra::getId))
                 .map(orden -> OrdenCompraResponse.builder()
+                        .id(orden.getId())
                         .numero(orden.getNumero())
                         .fecha(orden.getFecha())
                         .tipo(orden.getTipo())

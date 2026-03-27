@@ -68,6 +68,7 @@ public class OrdenCompraService {
 
     private OrdenCompraResponse toResponse(OrdenCompra entity) {
         return OrdenCompraResponse.builder()
+                .id(entity.getId())
                 .numero(entity.getNumero())
                 .fecha(entity.getFecha())
                 .tipo(entity.getTipo())
