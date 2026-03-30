@@ -83,11 +83,11 @@ management:
 # ==================== CUSTOM APP PROPERTIES ====================
 app:
   data-initializer:
-    enabled: ${DATA_INITIALIZER_ENABLED:true}
+    enabled: ${DATA_INITIALIZER_ENABLED}
   admin:
-    username: admin
-    password: ${ADMIN_PASSWORD:admin123}
-    bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
+    bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED}
   storage:
     bucket-base-url: ${BUCKET_BASE_URL:}
 

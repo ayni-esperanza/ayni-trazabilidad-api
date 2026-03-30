@@ -28,8 +28,6 @@ import java.util.Set;
 @ConditionalOnProperty(name = "app.admin.bootstrap-enabled", havingValue = "true", matchIfMissing = true)
 public class AdminBootstrapInitializer implements CommandLineRunner {
 
-    private static final String ADMIN_USERNAME = "admin";
-
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
@@ -38,6 +36,9 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
     @Value("${app.admin.password}")
     private String adminPassword;
 
+    @Value("${app.admin.username}")
+    private String adminUsername;
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -45,8 +46,12 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
             throw new IllegalStateException("La variable ADMIN_PASSWORD es obligatoria para inicializar el usuario admin");
         }
 
+        if (adminUsername == null || adminUsername.isBlank()) {
+            throw new IllegalStateException("La variable ADMIN_USERNAME es obligatoria para inicializar el usuario admin");
+        }
+
         Rol rolAdministrador = obtenerOCrearRolAdministrador();
-        Usuario admin = usuarioRepository.findByUsername(ADMIN_USERNAME)
+        Usuario admin = usuarioRepository.findByUsername(adminUsername)
                 .orElseGet(() -> crearAdmin(rolAdministrador));
 
         boolean actualizado = false;
@@ -93,7 +98,7 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
                 .nombre("Administrador")
                 .apellido("Sistema")
                 .email("admin@ayni.com")
-                .username(ADMIN_USERNAME)
+                .username(adminUsername)
                 .password(passwordEncoder.encode(adminPassword))
                 .telefono("999999999")
                 .activo(true)

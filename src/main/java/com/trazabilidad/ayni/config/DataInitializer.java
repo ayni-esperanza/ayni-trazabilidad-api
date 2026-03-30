@@ -32,6 +32,9 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.password}")
     private String adminPassword;
 
+    @Value("${app.admin.username}")
+    private String adminUsername;
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -184,7 +187,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nombre("Administrador")
                 .apellido("Sistema")
                 .email("admin@ayni.com")
-                .username("admin")
+                .username(adminUsername)
                 .password(passwordEncoder.encode(adminPassword))
                 .telefono("999999999")
                 .activo(true)
