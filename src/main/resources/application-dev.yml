@@ -60,6 +60,3 @@ management:
 app:
   data-initializer:
     enabled: true # Cargar datos de prueba en desarrollo
-  admin:
-    username: admin
-    password: admin123 # Password de desarrollo (OK aquí)

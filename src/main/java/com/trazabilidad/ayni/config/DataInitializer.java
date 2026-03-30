@@ -29,9 +29,6 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.admin.username}")
-    private String adminUsername;
-
     @Value("${app.admin.password}")
     private String adminPassword;
 
@@ -187,7 +184,7 @@ public class DataInitializer implements CommandLineRunner {
                 .nombre("Administrador")
                 .apellido("Sistema")
                 .email("admin@ayni.com")
-                .username(adminUsername)
+                .username("admin")
                 .password(passwordEncoder.encode(adminPassword))
                 .telefono("999999999")
                 .activo(true)

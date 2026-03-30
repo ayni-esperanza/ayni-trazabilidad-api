@@ -75,7 +75,6 @@ app:
   data-initializer:
     enabled: false # NUNCA cargar datos de prueba en producción
   admin:
-    username: ${ADMIN_USERNAME:#{null}} # Obligatorio via variable de entorno
     password: ${ADMIN_PASSWORD:#{null}} # Obligatorio via variable de entorno
 
 # ==================== RATE LIMITING PRODUCCIÓN ====================
