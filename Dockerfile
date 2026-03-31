@@ -17,6 +17,8 @@ RUN groupadd --system spring && useradd --system --gid spring --create-home spri
 
 COPY --from=builder /app/target/*.jar /app/app.jar
 
+RUN mkdir -p /app/logs && chown -R spring:spring /app
+
 USER spring
 
 EXPOSE 8080

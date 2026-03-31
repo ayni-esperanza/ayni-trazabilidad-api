@@ -334,6 +334,14 @@ ADMIN_BOOTSTRAP_ENABLED=true
 
 Luego de validar login de admin, vuelve a `false` y redeploy.
 
+Si en primer despliegue falla con `Schema-validation: missing table ...`, ejecuta una sola vez:
+
+```properties
+DDL_AUTO=update
+```
+
+Cuando la app levante y se creen las tablas faltantes, vuelve a `DDL_AUTO=validate` y redeploy.
+
 ### 1. Compilar
 
 ```bash

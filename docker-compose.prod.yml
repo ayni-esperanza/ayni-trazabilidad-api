@@ -30,7 +30,7 @@ services:
       DATA_INITIALIZER_ENABLED: "false"
       LOG_LEVEL: WARN
       SHOW_SQL: "false"
-      DDL_AUTO: validate
+      DDL_AUTO: ${DDL_AUTO:-validate}
       RATE_LIMIT_AUTH: ${RATE_LIMIT_AUTH:-3}
       RATE_LIMIT_API: ${RATE_LIMIT_API:-60}
       ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-false}
@@ -46,6 +46,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-2MB}
       MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-2MB}
+      LOG_FILE: ${LOG_FILE:-/app/logs/ayni-trazabilidad.log}
       BUCKET_BASE_URL: ${BUCKET_BASE_URL:-}
     ports:
       - "127.0.0.1:${API_PUBLIC_PORT:-8080}:8080"

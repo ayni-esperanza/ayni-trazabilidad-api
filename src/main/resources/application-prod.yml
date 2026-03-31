@@ -17,7 +17,7 @@ spring:
   # ==================== JPA/HIBERNATE PRODUCCIÓN ====================
   jpa:
     hibernate:
-      ddl-auto: validate # SOLO validar, NUNCA modificar schema en producción
+      ddl-auto: ${DDL_AUTO:validate} # validate en prod; usar update solo para bootstrap controlado
     show-sql: false # No mostrar SQL en producción
     properties:
       hibernate:
@@ -47,7 +47,7 @@ logging:
     org.hibernate.SQL: OFF # Completamente deshabilitado
     org.hibernate.type.descriptor.sql.BasicBinder: OFF
   file:
-    name: ${LOG_FILE:logs/ayni-trazabilidad.log}
+    name: ${LOG_FILE:/app/logs/ayni-trazabilidad.log}
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
