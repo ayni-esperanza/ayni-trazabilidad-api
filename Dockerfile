@@ -1,4 +1,4 @@
-FROM ghcr.io/adoptium/temurin:21-jdk-jammy AS builder
+FROM mcr.microsoft.com/openjdk/jdk:21-ubuntu AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN chmod +x mvnw && ./mvnw -q -DskipTests dependency:go-offline
 COPY src/ src/
 RUN ./mvnw -q -DskipTests clean package
 
-FROM ghcr.io/adoptium/temurin:21-jdk-jammy
+FROM mcr.microsoft.com/openjdk/jdk:21-ubuntu
 
 WORKDIR /app
 
