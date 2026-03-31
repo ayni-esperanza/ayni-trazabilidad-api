@@ -3,12 +3,17 @@ package com.trazabilidad.ayni.shared.storage;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.storage.dto.PresignUploadRequest;
 import com.trazabilidad.ayni.shared.storage.dto.PresignUploadResponse;
+import com.trazabilidad.ayni.shared.storage.dto.UploadObjectResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -82,8 +87,57 @@ public class R2PresignService {
         }
     }
 
+    public UploadObjectResponse uploadObject(
+            MultipartFile file,
+            String carpeta,
+            Long proyectoId,
+            Long actividadId,
+            Long userId) {
+        validateConfiguration();
+        validateMultipart(file);
+
+        PresignUploadRequest syntheticRequest = new PresignUploadRequest(
+                file.getOriginalFilename(),
+                file.getContentType(),
+                carpeta,
+                proyectoId,
+                actividadId);
+        validateRequest(syntheticRequest);
+
+        String objectKey = buildObjectKey(syntheticRequest, userId);
+        String contentType = file.getContentType().trim();
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .contentType(contentType)
+                .build();
+
+        try (S3Client s3Client = buildS3Client()) {
+            PutObjectResponse putObjectResponse = s3Client.putObject(
+                    putObjectRequest,
+                    RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            return new UploadObjectResponse(
+                    objectKey,
+                    storageUrlResolver.resolvePublicUrl(objectKey),
+                    putObjectResponse.eTag());
+        } catch (Exception ex) {
+            throw new IllegalStateException("No se pudo subir el archivo al bucket R2", ex);
+        }
+    }
+
     private S3Presigner buildPresigner() {
         return S3Presigner.builder()
+                .endpointOverride(URI.create(endpoint))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
+                .region(Region.of("auto"))
+                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .build();
+    }
+
+    private S3Client buildS3Client() {
+        return S3Client.builder()
                 .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
                 .region(Region.of("auto"))
@@ -105,6 +159,18 @@ public class R2PresignService {
         String contentType = request.contentType().trim().toLowerCase(Locale.ROOT);
         if (!contentType.startsWith("image/")) {
             throw new BadRequestException("Solo se permiten archivos de imagen para subida a bucket");
+        }
+    }
+
+    private void validateMultipart(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("El archivo es obligatorio");
+        }
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isBlank()) {
+            throw new BadRequestException("El nombre del archivo es obligatorio");
+        }
+        if (file.getContentType() == null || file.getContentType().trim().isBlank()) {
+            throw new BadRequestException("El content type del archivo es obligatorio");
         }
     }
 

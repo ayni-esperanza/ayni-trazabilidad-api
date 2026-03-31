@@ -171,6 +171,7 @@ modulo/
 - `/api/v1/roles` - Gestión de roles
 - `/api/v1/permisos` - Gestión de permisos
 - `/api/v1/storage/presign-upload` - Genera URL firmada para subir imágenes a R2
+- `/api/v1/storage/upload` - Sube imagen al bucket R2 desde backend (multipart/form-data)
 
 ### Storage (Cloudflare R2)
 
