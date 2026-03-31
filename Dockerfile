@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM ghcr.io/adoptium/temurin:21-jdk-jammy AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN chmod +x mvnw && ./mvnw -q -DskipTests dependency:go-offline
 COPY src/ src/
 RUN ./mvnw -q -DskipTests clean package
 
-FROM eclipse-temurin:21-jre-jammy
+FROM ghcr.io/adoptium/temurin:21-jre-jammy
 
 WORKDIR /app
 
