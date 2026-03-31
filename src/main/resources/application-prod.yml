@@ -73,6 +73,14 @@ management:
 app:
   data-initializer:
     enabled: ${DATA_INITIALIZER_ENABLED}
+  storage:
+    bucket-base-url: ${BUCKET_BASE_URL:}
+    r2:
+      endpoint: ${R2_ENDPOINT:}
+      bucket-name: ${R2_BUCKET_NAME:}
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      presign-expiration-seconds: ${R2_PRESIGN_EXPIRATION_SECONDS:300}
 
 # ==================== RATE LIMITING PRODUCCIÓN ====================
 resilience4j:

@@ -170,6 +170,24 @@ modulo/
 - `/api/v1/usuarios` - Gestión de usuarios
 - `/api/v1/roles` - Gestión de roles
 - `/api/v1/permisos` - Gestión de permisos
+- `/api/v1/storage/presign-upload` - Genera URL firmada para subir imágenes a R2
+
+### Storage (Cloudflare R2)
+
+La API ahora soporta generación de URLs firmadas para subida directa al bucket (PUT desde frontend/browser).
+
+Variables requeridas para esta funcionalidad:
+
+```properties
+BUCKET_BASE_URL=https://media.tudominio.com
+R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+R2_BUCKET_NAME=mi-bucket
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_PRESIGN_EXPIRATION_SECONDS=300
+```
+
+Si faltan estas variables, el endpoint de presign devolverá error de configuración.
 
 ### Formato de Respuestas
 
