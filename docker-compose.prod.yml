@@ -1,14 +1,32 @@
 services:
   postgres:
-    ports: []
+    image: postgres:16-alpine
+    container_name: ayni-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ayni-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
       DATA_INITIALIZER_ENABLED: "false"
       LOG_LEVEL: WARN
       SHOW_SQL: "false"
@@ -18,5 +36,19 @@ services:
       ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-false}
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-2MB}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-2MB}
+      BUCKET_BASE_URL: ${BUCKET_BASE_URL:-}
     ports:
       - "127.0.0.1:${API_PUBLIC_PORT:-8080}:8080"
+
+volumes:
+  postgres_data:
