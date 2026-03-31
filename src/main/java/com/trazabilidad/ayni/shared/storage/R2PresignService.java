@@ -24,14 +24,36 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class R2PresignService {
 
     private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyyMM");
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "application/pdf",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "text/plain",
+            "text/csv",
+            "application/zip",
+            "application/x-zip-compressed",
+            "application/vnd.rar",
+            "application/x-rar-compressed",
+            "application/octet-stream"
+    );
+    private static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "xlsx", "xls", "pdf", "docx", "doc", "pptx", "ppt", "txt", "csv", "png", "jpg", "jpeg", "webp", "gif", "zip", "rar"
+    ));
 
     private final String endpoint;
     private final String bucketName;
@@ -157,9 +179,32 @@ public class R2PresignService {
 
     private void validateRequest(PresignUploadRequest request) {
         String contentType = request.contentType().trim().toLowerCase(Locale.ROOT);
-        if (!contentType.startsWith("image/")) {
-            throw new BadRequestException("Solo se permiten archivos de imagen para subida a bucket");
+        String extension = getFileExtension(request.fileName());
+
+        boolean allowedByImageType = contentType.startsWith("image/");
+        boolean allowedByExplicitType = ALLOWED_CONTENT_TYPES.contains(contentType);
+        boolean allowedByExtension = extension != null && ALLOWED_EXTENSIONS.contains(extension);
+
+        if (!allowedByImageType && !allowedByExplicitType && !allowedByExtension) {
+            throw new BadRequestException("Tipo de archivo no permitido para subida a bucket");
         }
+
+        if ("application/octet-stream".equals(contentType) && !allowedByExtension) {
+            throw new BadRequestException("Archivo binario no permitido: extension no autorizada");
+        }
+    }
+
+    private String getFileExtension(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0 || dot == fileName.length() - 1) {
+            return null;
+        }
+
+        return fileName.substring(dot + 1).trim().toLowerCase(Locale.ROOT);
     }
 
     private void validateMultipart(MultipartFile file) {
