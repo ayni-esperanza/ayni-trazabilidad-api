@@ -326,13 +326,8 @@ cp .env.prod.example .env
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-Para primer despliegue (crear admin), cambia temporalmente:
-
-```properties
-ADMIN_BOOTSTRAP_ENABLED=true
-```
-
-Luego de validar login de admin, vuelve a `false` y redeploy.
+Puedes dejar `ADMIN_BOOTSTRAP_ENABLED=true` permanentemente.
+El inicializador es idempotente: si el admin ya existe, solo valida que siga activo y con rol ADMINISTRADOR (sin cambiar password).
 
 Si en primer despliegue falla con `Schema-validation: missing table ...`, ejecuta una sola vez:
 

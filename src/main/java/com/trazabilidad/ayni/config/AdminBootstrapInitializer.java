@@ -42,17 +42,18 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (adminPassword == null || adminPassword.isBlank()) {
-            throw new IllegalStateException("La variable ADMIN_PASSWORD es obligatoria para inicializar el usuario admin");
-        }
-
         if (adminUsername == null || adminUsername.isBlank()) {
             throw new IllegalStateException("La variable ADMIN_USERNAME es obligatoria para inicializar el usuario admin");
         }
 
+        Usuario adminExistente = usuarioRepository.findByUsername(adminUsername).orElse(null);
+
+        if (adminExistente == null && (adminPassword == null || adminPassword.isBlank())) {
+            throw new IllegalStateException("La variable ADMIN_PASSWORD es obligatoria cuando el usuario admin no existe");
+        }
+
         Rol rolAdministrador = obtenerOCrearRolAdministrador();
-        Usuario admin = usuarioRepository.findByUsername(adminUsername)
-                .orElseGet(() -> crearAdmin(rolAdministrador));
+        Usuario admin = adminExistente != null ? adminExistente : crearAdmin(rolAdministrador);
 
         boolean actualizado = false;
 
@@ -73,6 +74,8 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
         if (actualizado) {
             usuarioRepository.save(admin);
             log.info("Usuario admin sincronizado con rol ADMINISTRADOR");
+        } else {
+            log.debug("Usuario admin ya estaba sincronizado");
         }
     }
 
