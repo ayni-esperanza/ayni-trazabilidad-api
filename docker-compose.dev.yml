@@ -1,0 +1,8 @@
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PUBLIC_PORT:-5432}:5432"
+
+  api:
+    ports:
+      - "${API_PUBLIC_PORT:-8080}:8080"

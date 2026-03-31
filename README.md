@@ -267,6 +267,73 @@ src/main/resources/db/migration/V1__initial_schema.sql
 
 ## Despliegue en Producción
 
+### Docker (recomendado para Dokploy)
+
+```bash
+docker build -t ayni-api:prod .
+```
+
+Ejemplo local:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=prod \
+  -e SERVER_PORT=8080 \
+  -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/ayni_trazabilidad \
+  -e DB_USERNAME=postgres \
+  -e DB_PASSWORD=CHANGE_ME \
+  -e JWT_SECRET=CHANGE_ME \
+  -e JWT_EXPIRATION=86400000 \
+  -e JWT_REFRESH_EXPIRATION=604800000 \
+  -e CORS_ORIGINS=https://tu-front.com \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=CHANGE_ME_ADMIN_PASSWORD \
+  -e ADMIN_BOOTSTRAP_ENABLED=true \
+  -e DATA_INITIALIZER_ENABLED=false \
+  ayni-api:prod
+```
+
+En Dokploy, define esas variables en el panel de entorno y usa este `Dockerfile`.
+
+### Docker Compose (API + PostgreSQL)
+
+Para entorno local o VPS sin servicio administrado de base de datos:
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+El compose:
+- levanta `postgres:16-alpine`
+- construye la API desde `Dockerfile`
+- inyecta variables desde `.env`
+- fuerza `DB_URL` y `DATABASE_URL` al host interno `postgres` para evitar hardcode local
+
+Servicios expuestos:
+- API: `http://localhost:${API_PUBLIC_PORT}`
+- Postgres: puerto `${POSTGRES_PUBLIC_PORT}`
+
+### Docker Compose Producción (más seguro)
+
+Este modo:
+- No expone PostgreSQL al host
+- Expone API solo en `127.0.0.1` para usar reverse proxy (Traefik/Nginx)
+- Fuerza perfil `prod` y valores seguros por defecto
+
+```bash
+cp .env.prod.example .env
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Para primer despliegue (crear admin), cambia temporalmente:
+
+```properties
+ADMIN_BOOTSTRAP_ENABLED=true
+```
+
+Luego de validar login de admin, vuelve a `false` y redeploy.
+
 ### 1. Compilar
 
 ```bash
