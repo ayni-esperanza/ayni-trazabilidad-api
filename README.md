@@ -342,6 +342,12 @@ DDL_AUTO=update
 
 Cuando la app levante y se creen las tablas faltantes, vuelve a `DDL_AUTO=validate` y redeploy.
 
+Migraciones Flyway de referencia:
+- `V1__initial_schema.sql` crea el esquema completo inicial
+- `V2__create_activity_attachment_tables.sql` agrega/asegura tablas de adjuntos
+
+En producción, mantén `DDL_AUTO=validate` para que el schema se gestione solo por migraciones.
+
 ### 1. Compilar
 
 ```bash
