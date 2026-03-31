@@ -31,7 +31,7 @@ import java.util.UUID;
 @Service
 public class R2PresignService {
 
-    private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
+    private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyyMM");
 
     private final String endpoint;
     private final String bucketName;
@@ -182,20 +182,26 @@ public class R2PresignService {
 
         String yearMonth = YEAR_MONTH_FORMAT.format(Instant.now().atOffset(ZoneOffset.UTC));
         String safeFileName = sanitizeFileName(request.fileName());
-        StringBuilder key = new StringBuilder("trazabilidad/")
+        StringBuilder scope = new StringBuilder();
+
+        if (request.proyectoId() != null) {
+            scope.append("p").append(request.proyectoId()).append('-');
+        }
+        if (request.actividadId() != null) {
+            scope.append("a").append(request.actividadId()).append('-');
+        }
+        if (userId != null) {
+            scope.append("u").append(userId).append('-');
+        }
+
+        StringBuilder key = new StringBuilder()
                 .append(baseCarpeta)
                 .append('/')
                 .append(yearMonth)
                 .append('/');
 
-        if (request.proyectoId() != null) {
-            key.append("proyecto-").append(request.proyectoId()).append('/');
-        }
-        if (request.actividadId() != null) {
-            key.append("actividad-").append(request.actividadId()).append('/');
-        }
-        if (userId != null) {
-            key.append("u-").append(userId).append('/');
+        if (!scope.isEmpty()) {
+            key.append(scope);
         }
 
         key.append(UUID.randomUUID()).append('-').append(safeFileName);
