@@ -87,11 +87,11 @@ resilience4j:
   ratelimiter:
     instances:
       authLimiter:
-        limit-for-period: 3 # Solo 3 intentos por minuto en producción
+        limit-for-period: ${RATE_LIMIT_AUTH:3} # Solo 3 intentos por minuto en producción
         limit-refresh-period: 1m
         timeout-duration: 0s
       apiLimiter:
-        limit-for-period: 60 # Máximo 60 requests por minuto
+        limit-for-period: ${RATE_LIMIT_API:60} # Máximo 60 requests por minuto
         limit-refresh-period: 1m
         timeout-duration: 0s
 

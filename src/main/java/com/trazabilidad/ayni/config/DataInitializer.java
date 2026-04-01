@@ -38,95 +38,58 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (permisoRepository.count() == 0) {
-            crearPermisos();
-        }
-
-        if (rolRepository.count() == 0) {
-            crearRoles();
-        }
-
-        if (usuarioRepository.count() == 0) {
-            crearUsuarioAdmin();
-        }
+        crearPermisos();
+        crearRoles();
+        crearUsuarioAdmin();
 
         crearResponsablesIniciales();
     }
 
     private void crearPermisos() {
-        List<Permiso> permisos = new ArrayList<>();
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_USUARIOS")
-                .modulo(Constants.Modulos.USUARIOS)
-                .descripcion("Gestion completa de usuarios")
-                .acciones(new HashSet<>(Arrays.asList(
-                        Constants.Acciones.CREAR,
-                        Constants.Acciones.LEER,
-                        Constants.Acciones.ACTUALIZAR,
-                        Constants.Acciones.ELIMINAR)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_ROLES")
-                .modulo(Constants.Modulos.ROLES)
-                .descripcion("Gestion completa de roles")
-                .acciones(new HashSet<>(Arrays.asList(
-                        Constants.Acciones.CREAR,
-                        Constants.Acciones.LEER,
-                        Constants.Acciones.ACTUALIZAR,
-                        Constants.Acciones.ELIMINAR)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_PERMISOS")
-                .modulo(Constants.Modulos.PERMISOS)
-                .descripcion("Gestion completa de permisos")
-                .acciones(new HashSet<>(Arrays.asList(
-                        Constants.Acciones.CREAR,
-                        Constants.Acciones.LEER,
-                        Constants.Acciones.ACTUALIZAR,
-                        Constants.Acciones.ELIMINAR)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_SOLICITUDES")
-                .modulo(Constants.Modulos.SOLICITUDES)
-                .descripcion("Gestion de solicitudes")
-                .acciones(new HashSet<>(Arrays.asList(
-                        Constants.Acciones.CREAR,
-                        Constants.Acciones.LEER,
-                        Constants.Acciones.ACTUALIZAR,
-                        Constants.Acciones.ELIMINAR)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_EVIDENCIAS")
-                .modulo(Constants.Modulos.EVIDENCIAS)
-                .descripcion("Gestion de informes y evidencias")
-                .acciones(new HashSet<>(Arrays.asList(
-                        Constants.Acciones.CREAR,
-                        Constants.Acciones.LEER,
-                        Constants.Acciones.ACTUALIZAR,
-                        Constants.Acciones.ELIMINAR)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_TABLERO")
-                .modulo(Constants.Modulos.TABLERO)
-                .descripcion("Acceso al tablero de control")
-                .acciones(new HashSet<>(List.of(Constants.Acciones.LEER)))
-                .build());
-
-        permisos.add(Permiso.builder()
-                .nombre("PERM_ESTADISTICAS")
-                .modulo(Constants.Modulos.ESTADISTICAS)
-                .descripcion("Visualizacion de estadisticas e indicadores")
-                .acciones(new HashSet<>(List.of(Constants.Acciones.LEER)))
-                .build());
-
-        permisoRepository.saveAll(permisos);
-        log.info("Permisos creados: {}", permisos.size());
+        List<Permiso> permisosCreados = new ArrayList<>();
+        permisosCreados.add(asegurarPermiso(
+                "PERM_USUARIOS",
+                Constants.Modulos.USUARIOS,
+                "Gestion completa de usuarios",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_ROLES",
+                Constants.Modulos.ROLES,
+                "Gestion completa de roles",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_PERMISOS",
+                Constants.Modulos.PERMISOS,
+                "Gestion completa de permisos",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_SOLICITUDES",
+                Constants.Modulos.SOLICITUDES,
+                "Gestion de solicitudes",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_EVIDENCIAS",
+                Constants.Modulos.EVIDENCIAS,
+                "Gestion de informes y evidencias",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_TABLERO",
+                Constants.Modulos.TABLERO,
+                "Acceso al tablero de control",
+                Set.of(Constants.Acciones.LEER)
+        ));
+        permisosCreados.add(asegurarPermiso(
+                "PERM_ESTADISTICAS",
+                Constants.Modulos.ESTADISTICAS,
+                "Visualizacion de estadisticas e indicadores",
+                Set.of(Constants.Acciones.LEER)
+        ));
+        log.info("Permisos verificados/creados: {}", permisosCreados.size());
     }
 
     private void crearRoles() {
@@ -134,52 +97,46 @@ public class DataInitializer implements CommandLineRunner {
         Map<String, Permiso> permisosMap = new HashMap<>();
         todosLosPermisos.forEach(p -> permisosMap.put(p.getModulo(), p));
 
-        Rol administrador = Rol.builder()
-                .nombre(Constants.Roles.ADMINISTRADOR)
-                .descripcion("Acceso completo al sistema")
-                .activo(true)
-                .permisos(new HashSet<>(todosLosPermisos))
-                .usuarios(new HashSet<>())
-                .build();
-
-        Rol ingeniero = Rol.builder()
-                .nombre(Constants.Roles.INGENIERO)
-                .descripcion("Gestion tecnica y seguimiento")
-                .activo(true)
-                .permisos(new HashSet<>(Arrays.asList(
+        asegurarRol(
+                Constants.Roles.ADMINISTRADOR,
+                "Acceso completo al sistema",
+                new HashSet<>(todosLosPermisos)
+        );
+        asegurarRol(
+                Constants.Roles.INGENIERO,
+                "Gestion tecnica y seguimiento",
+                setSinNulos(
                         permisosMap.get(Constants.Modulos.SOLICITUDES),
                         permisosMap.get(Constants.Modulos.EVIDENCIAS),
                         permisosMap.get(Constants.Modulos.TABLERO),
-                        permisosMap.get(Constants.Modulos.ESTADISTICAS))))
-                .usuarios(new HashSet<>())
-                .build();
-
-        Rol gerente = Rol.builder()
-                .nombre(Constants.Roles.GERENTE)
-                .descripcion("Supervision y gestion de operaciones")
-                .activo(true)
-                .permisos(new HashSet<>(Arrays.asList(
+                        permisosMap.get(Constants.Modulos.ESTADISTICAS)
+                )
+        );
+        asegurarRol(
+                Constants.Roles.GERENTE,
+                "Supervision y gestion de operaciones",
+                setSinNulos(
                         permisosMap.get(Constants.Modulos.SOLICITUDES),
                         permisosMap.get(Constants.Modulos.EVIDENCIAS),
                         permisosMap.get(Constants.Modulos.TABLERO),
-                        permisosMap.get(Constants.Modulos.ESTADISTICAS))))
-                .usuarios(new HashSet<>())
-                .build();
-
-        Rol asistente = Rol.builder()
-                .nombre(Constants.Roles.ASISTENTE)
-                .descripcion("Registro de solicitudes y consultas basicas")
-                .activo(true)
-                .permisos(new HashSet<>(Arrays.asList(
+                        permisosMap.get(Constants.Modulos.ESTADISTICAS)
+                )
+        );
+        asegurarRol(
+                Constants.Roles.ASISTENTE,
+                "Registro de solicitudes y consultas basicas",
+                setSinNulos(
                         permisosMap.get(Constants.Modulos.SOLICITUDES),
-                        permisosMap.get(Constants.Modulos.TABLERO))))
-                .usuarios(new HashSet<>())
-                .build();
-
-        rolRepository.saveAll(Arrays.asList(administrador, ingeniero, gerente, asistente));
+                        permisosMap.get(Constants.Modulos.TABLERO)
+                )
+        );
     }
 
     private void crearUsuarioAdmin() {
+        if (usuarioRepository.existsByUsername(adminUsername)) {
+            return;
+        }
+
         Rol rolAdmin = rolRepository.findByNombre(Constants.Roles.ADMINISTRADOR)
                 .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
 
@@ -227,6 +184,43 @@ public class DataInitializer implements CommandLineRunner {
 
             usuarioRepository.save(usuario);
         }
+    }
+
+    private Permiso asegurarPermiso(String nombre, String modulo, String descripcion, Set<String> acciones) {
+        return permisoRepository.findByNombre(nombre)
+                .map(existente -> {
+                    existente.setModulo(modulo);
+                    existente.setDescripcion(descripcion);
+                    existente.setAcciones(new HashSet<>(acciones));
+                    return permisoRepository.save(existente);
+                })
+                .orElseGet(() -> permisoRepository.save(Permiso.builder()
+                        .nombre(nombre)
+                        .modulo(modulo)
+                        .descripcion(descripcion)
+                        .acciones(new HashSet<>(acciones))
+                        .build()));
+    }
+
+    private void asegurarRol(String nombre, String descripcion, Set<Permiso> permisos) {
+        Rol rol = rolRepository.findByNombre(nombre).orElseGet(() -> Rol.builder()
+                .nombre(nombre)
+                .usuarios(new HashSet<>())
+                .build());
+        rol.setDescripcion(descripcion);
+        rol.setActivo(true);
+        rol.setPermisos(new HashSet<>(permisos));
+        rolRepository.save(rol);
+    }
+
+    private Set<Permiso> setSinNulos(Permiso... permisos) {
+        Set<Permiso> resultado = new HashSet<>();
+        for (Permiso permiso : permisos) {
+            if (permiso != null) {
+                resultado.add(permiso);
+            }
+        }
+        return resultado;
     }
 
     private record UsuarioBase(String nombre, String apellido, String email, String username) {
