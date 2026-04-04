@@ -72,7 +72,7 @@ management:
 # ==================== DATA INITIALIZER ====================
 app:
   data-initializer:
-    enabled: ${DATA_INITIALIZER_ENABLED}
+    enabled: ${DATA_INITIALIZER_ENABLED:false}
   storage:
     bucket-base-url: ${BUCKET_BASE_URL:}
     r2:
