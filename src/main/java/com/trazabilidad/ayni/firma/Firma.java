@@ -26,8 +26,7 @@ public class Firma {
     @Column(length = 200)
     private String cargo;
 
-    @Lob
-    @Column(name = "imagen_base64", nullable = false)
+    @Column(name = "imagen_base64", nullable = false, columnDefinition = "TEXT")
     private String imagenBase64;
 
     @Column(name = "fecha_creacion", nullable = false)
