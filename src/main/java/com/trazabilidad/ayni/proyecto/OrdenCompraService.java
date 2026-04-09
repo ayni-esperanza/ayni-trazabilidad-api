@@ -2,7 +2,9 @@ package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.OrdenCompraRequest;
 import com.trazabilidad.ayni.proyecto.dto.OrdenCompraResponse;
+import com.trazabilidad.ayni.proyecto.dto.FlujoAdjuntoResponse;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
+import com.trazabilidad.ayni.shared.storage.StorageUrlResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ public class OrdenCompraService {
 
     private final ProyectoRepository proyectoRepository;
     private final OrdenCompraRepository ordenCompraRepository;
+    private final StorageUrlResolver storageUrlResolver;
 
     @Transactional(readOnly = true)
     public List<OrdenCompraResponse> listar(Long proyectoId) {
@@ -38,6 +41,8 @@ public class OrdenCompraService {
                 .total(request.getTotal())
                 .build();
 
+        aplicarAdjuntos(entity, request);
+
         return toResponse(ordenCompraRepository.save(entity));
     }
 
@@ -51,6 +56,7 @@ public class OrdenCompraService {
         entity.setNumeroLicitacion(request.getNumeroLicitacion());
         entity.setNumeroSolicitud(request.getNumeroSolicitud());
         entity.setTotal(request.getTotal());
+        aplicarAdjuntos(entity, request);
 
         return toResponse(ordenCompraRepository.save(entity));
     }
@@ -78,6 +84,7 @@ public class OrdenCompraService {
                     .numeroSolicitud(request.getNumeroSolicitud())
                     .total(request.getTotal())
                     .build();
+            aplicarAdjuntos(entity, request);
             nuevas.add(entity);
         }
 
@@ -103,6 +110,41 @@ public class OrdenCompraService {
                 .numeroLicitacion(entity.getNumeroLicitacion())
                 .numeroSolicitud(entity.getNumeroSolicitud())
                 .total(entity.getTotal())
+                .adjuntos(entity.getAdjuntos() == null
+                        ? List.of()
+                        : entity.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
+                                .nombre(adjunto.getNombre())
+                                .tipo(adjunto.getTipo())
+                                .tamano(adjunto.getTamano())
+                                .objectKey(adjunto.getObjectKey())
+                                .dataUrl(adjunto.getDataUrl())
+                                .url(adjunto.getObjectKey() != null
+                                        ? storageUrlResolver.resolvePublicUrl(adjunto.getObjectKey())
+                                        : null)
+                                .build()).toList())
                 .build();
+    }
+
+    private void aplicarAdjuntos(OrdenCompra entity, OrdenCompraRequest request) {
+        entity.getAdjuntos().clear();
+
+        if (request.getAdjuntos() == null || request.getAdjuntos().isEmpty()) {
+            return;
+        }
+
+        for (var adjunto : request.getAdjuntos()) {
+            if (adjunto == null || adjunto.getNombre() == null || adjunto.getNombre().isBlank()) {
+                continue;
+            }
+
+            entity.getAdjuntos().add(OrdenCompraAdjunto.builder()
+                    .ordenCompra(entity)
+                    .nombre(adjunto.getNombre().trim())
+                    .tipo(adjunto.getTipo() != null ? adjunto.getTipo().trim() : "application/octet-stream")
+                    .tamano(adjunto.getTamano() != null ? adjunto.getTamano() : 0L)
+                    .objectKey(adjunto.getObjectKey())
+                    .dataUrl(adjunto.getDataUrl())
+                    .build());
+        }
     }
 }

@@ -44,7 +44,7 @@ public class ProyectoMapper {
                 .ubicacion(proyecto.getUbicacion())
                 .areas(proyecto.getAreas())
                 .costo(proyecto.getCosto())
-                .ordenesCompra(mapOrdenesCompra(proyecto.getOrdenesCompra()))
+                .ordenesCompra(mapOrdenesCompra(proyecto.getOrdenesCompra(), publicUrlResolver))
                 .descripcion(proyecto.getDescripcion())
                 .fechaRegistro(proyecto.getFechaRegistro())
                 .fechaInicio(proyecto.getFechaInicio())
@@ -99,7 +99,7 @@ public class ProyectoMapper {
                 .toList();
     }
 
-    private static List<OrdenCompraResponse> mapOrdenesCompra(List<OrdenCompra> ordenesCompra) {
+    private static List<OrdenCompraResponse> mapOrdenesCompra(List<OrdenCompra> ordenesCompra, Function<String, String> publicUrlResolver) {
         if (ordenesCompra == null) {
             return new ArrayList<>();
         }
@@ -114,6 +114,18 @@ public class ProyectoMapper {
                         .numeroLicitacion(orden.getNumeroLicitacion())
                         .numeroSolicitud(orden.getNumeroSolicitud())
                         .total(orden.getTotal())
+                        .adjuntos(orden.getAdjuntos() != null
+                                ? orden.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
+                                        .nombre(adjunto.getNombre())
+                                        .tipo(adjunto.getTipo())
+                                        .tamano(adjunto.getTamano())
+                                        .objectKey(adjunto.getObjectKey())
+                                        .dataUrl(adjunto.getDataUrl())
+                                        .url(adjunto.getObjectKey() != null
+                                                ? publicUrlResolver.apply(adjunto.getObjectKey())
+                                                : null)
+                                        .build()).toList()
+                                : new ArrayList<>())
                         .build())
                 .toList();
     }

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ordenes_compra", indexes = {
@@ -44,4 +46,8 @@ public class OrdenCompra {
 
     @Column(name = "total", precision = 14, scale = 2)
     private BigDecimal total;
+
+    @OneToMany(mappedBy = "ordenCompra", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrdenCompraAdjunto> adjuntos = new ArrayList<>();
 }

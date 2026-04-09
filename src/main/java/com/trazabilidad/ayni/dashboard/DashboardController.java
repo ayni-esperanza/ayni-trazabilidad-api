@@ -1,6 +1,9 @@
 package com.trazabilidad.ayni.dashboard;
 
 import com.trazabilidad.ayni.dashboard.dto.DashboardResponse;
+import com.trazabilidad.ayni.dashboard.dto.DashboardActividadEncargadoResponse;
+import com.trazabilidad.ayni.dashboard.dto.DashboardCostoDetalleResponse;
+import com.trazabilidad.ayni.dashboard.dto.DashboardSerieResponse;
 import com.trazabilidad.ayni.dashboard.dto.ProyectoIndicadorResponse;
 import com.trazabilidad.ayni.dashboard.dto.ResponsableIndicadorResponse;
 import java.util.List;
@@ -54,5 +57,30 @@ public class DashboardController {
     @GetMapping("/proyectos-indicadores")
     public ResponseEntity<List<ProyectoIndicadorResponse>> obtenerIndicadoresProyectos() {
         return ResponseEntity.ok(dashboardService.obtenerIndicadoresProyectos());
+    }
+
+    @GetMapping("/grafico/activos")
+    public ResponseEntity<List<DashboardSerieResponse>> obtenerGraficoActivos() {
+        return ResponseEntity.ok(dashboardService.obtenerGraficoActivosPorMes());
+    }
+
+    @GetMapping("/grafico/finalizados")
+    public ResponseEntity<List<DashboardSerieResponse>> obtenerGraficoFinalizados() {
+        return ResponseEntity.ok(dashboardService.obtenerGraficoFinalizadosPorMes());
+    }
+
+    @GetMapping("/grafico/gastos")
+    public ResponseEntity<List<DashboardSerieResponse>> obtenerGraficoGastos() {
+        return ResponseEntity.ok(dashboardService.obtenerGraficoGastosPorMes());
+    }
+
+    @GetMapping("/gastos-proyectos")
+    public ResponseEntity<List<DashboardCostoDetalleResponse>> obtenerGastosProyectos() {
+        return ResponseEntity.ok(dashboardService.obtenerGastosProyectos());
+    }
+
+    @GetMapping("/tareas-encargados")
+    public ResponseEntity<List<DashboardActividadEncargadoResponse>> obtenerTareasEncargados() {
+        return ResponseEntity.ok(dashboardService.obtenerTareasEncargados());
     }
 }

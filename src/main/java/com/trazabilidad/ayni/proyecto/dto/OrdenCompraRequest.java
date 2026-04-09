@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -19,4 +21,6 @@ public class OrdenCompraRequest {
     private String numeroLicitacion;
     private String numeroSolicitud;
     private BigDecimal total;
+    @Builder.Default
+    private List<ActividadAdjuntoRequest> adjuntos = new ArrayList<>();
 }

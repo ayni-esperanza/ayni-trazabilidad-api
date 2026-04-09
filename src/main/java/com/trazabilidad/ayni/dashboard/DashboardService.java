@@ -1,11 +1,17 @@
 package com.trazabilidad.ayni.dashboard;
 
 import com.trazabilidad.ayni.costo.CostoAdicionalRepository;
+import com.trazabilidad.ayni.costo.CostoManoObra;
 import com.trazabilidad.ayni.costo.CostoManoObraRepository;
+import com.trazabilidad.ayni.costo.CostoMaterial;
 import com.trazabilidad.ayni.costo.CostoMaterialRepository;
+import com.trazabilidad.ayni.dashboard.dto.DashboardActividadEncargadoResponse;
+import com.trazabilidad.ayni.dashboard.dto.DashboardCostoDetalleResponse;
 import com.trazabilidad.ayni.dashboard.dto.DashboardResponse;
+import com.trazabilidad.ayni.dashboard.dto.DashboardSerieResponse;
 import com.trazabilidad.ayni.dashboard.dto.ProyectoIndicadorResponse;
 import com.trazabilidad.ayni.dashboard.dto.ResponsableIndicadorResponse;
+import com.trazabilidad.ayni.proyecto.ActividadProyecto;
 import com.trazabilidad.ayni.proyecto.Proyecto;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
@@ -20,8 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +40,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DashboardService {
+
+    private static final EnumSet<EstadoProyecto> ESTADOS_ACTIVOS = EnumSet.of(EstadoProyecto.PENDIENTE, EstadoProyecto.EN_PROCESO);
+    private static final EnumSet<EstadoProyecto> ESTADOS_FINALIZADOS = EnumSet.of(EstadoProyecto.COMPLETADO, EstadoProyecto.FINALIZADO);
+    private static final String CATEGORIA_MATERIALES = "Materiales";
+    private static final String CATEGORIA_MANO_OBRA = "Mano de Obra";
+    private static final String CATEGORIA_OTROS_COSTOS = "Otros Costos";
+    private static final String[] MONTH_LABELS = { "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic" };
 
     private final SolicitudRepository solicitudRepository;
     private final ProyectoRepository proyectoRepository;
@@ -198,9 +215,254 @@ public class DashboardService {
                     .durationEnd(p.getFechaFinalizacion())
                     .tasaRetorno(tasaRetorno)
                     .descripcion(p.getDescripcion())
+                    .ubicacion(p.getUbicacion())
+                    .areas(p.getAreas())
+                    .fechaRegistro(p.getFechaRegistro())
                     .build());
         }
 
         return list;
+    }
+
+    public List<DashboardSerieResponse> obtenerGraficoActivosPorMes() {
+        return construirSerieMensualPorProyecto(proyectoRepository.findAll(), ESTADOS_ACTIVOS, false);
+    }
+
+    public List<DashboardSerieResponse> obtenerGraficoFinalizadosPorMes() {
+        return construirSerieMensualPorProyecto(proyectoRepository.findAll(), ESTADOS_FINALIZADOS, true);
+    }
+
+    public List<DashboardSerieResponse> obtenerGraficoGastosPorMes() {
+        Map<Month, BigDecimal> acumulado = inicializarSerieMensual();
+
+        for (Proyecto proyecto : proyectoRepository.findAll()) {
+            for (CostoMaterial material : proyecto.getCostosMaterial()) {
+                LocalDate fecha = material.getFecha() != null ? material.getFecha() : toLocalDate(material.getFechaCreacion());
+                acumularMontoMensual(acumulado, fecha, material.getCostoTotal());
+            }
+
+            for (CostoManoObra manoObra : proyecto.getCostosManoObra()) {
+                LocalDate fecha = toLocalDate(manoObra.getFechaCreacion());
+                acumularMontoMensual(acumulado, fecha, manoObra.getCostoTotal());
+            }
+
+            for (com.trazabilidad.ayni.costo.CostoAdicional adicional : proyecto.getCostosAdicionales()) {
+                LocalDate fecha = adicional.getFecha() != null ? adicional.getFecha() : toLocalDate(adicional.getFechaCreacion());
+                acumularMontoMensual(acumulado, fecha, adicional.getMonto());
+            }
+        }
+
+        return java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(index -> DashboardSerieResponse.builder()
+                        .name(MONTH_LABELS[index - 1])
+                        .value(acumulado.getOrDefault(Month.of(index), BigDecimal.ZERO))
+                        .build())
+                .toList();
+    }
+
+    public List<DashboardCostoDetalleResponse> obtenerGastosProyectos() {
+        List<DashboardCostoDetalleResponse> gastos = new ArrayList<>();
+
+        for (Proyecto proyecto : proyectoRepository.findAll()) {
+            for (CostoMaterial material : proyecto.getCostosMaterial()) {
+                gastos.add(DashboardCostoDetalleResponse.builder()
+                        .id(material.getId())
+                        .proyectoId(proyecto.getId())
+                        .proyecto(proyecto.getNombreProyecto())
+                        .categoria(CATEGORIA_MATERIALES)
+                        .descripcion(descripcionMaterial(material))
+                        .monto(safe(material.getCostoTotal()))
+                        .fecha(material.getFecha() != null ? material.getFecha() : toLocalDate(material.getFechaCreacion()))
+                        .responsable(valorODefault(material.getEncargado(), responsableProyecto(proyecto)))
+                        .build());
+            }
+
+            for (CostoManoObra manoObra : proyecto.getCostosManoObra()) {
+                gastos.add(DashboardCostoDetalleResponse.builder()
+                        .id(manoObra.getId())
+                        .proyectoId(proyecto.getId())
+                        .proyecto(proyecto.getNombreProyecto())
+                        .categoria(CATEGORIA_MANO_OBRA)
+                        .descripcion(descripcionManoObra(manoObra))
+                        .monto(safe(manoObra.getCostoTotal()))
+                        .fecha(toLocalDate(manoObra.getFechaCreacion()))
+                        .responsable(valorODefault(manoObra.getTrabajador(), responsableProyecto(proyecto)))
+                        .build());
+            }
+
+            for (com.trazabilidad.ayni.costo.CostoAdicional adicional : proyecto.getCostosAdicionales()) {
+                gastos.add(DashboardCostoDetalleResponse.builder()
+                        .id(adicional.getId())
+                        .proyectoId(proyecto.getId())
+                        .proyecto(proyecto.getNombreProyecto())
+                        .categoria(CATEGORIA_OTROS_COSTOS)
+                        .descripcion(descripcionAdicional(adicional))
+                        .monto(safe(adicional.getMonto()))
+                        .fecha(adicional.getFecha() != null ? adicional.getFecha() : toLocalDate(adicional.getFechaCreacion()))
+                        .responsable(valorODefault(adicional.getEncargado(), responsableProyecto(proyecto)))
+                        .build());
+            }
+        }
+
+        gastos.sort(Comparator
+                .comparing(DashboardCostoDetalleResponse::getFecha, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(DashboardCostoDetalleResponse::getProyecto, Comparator.nullsLast(String::compareToIgnoreCase)));
+        return gastos;
+    }
+
+    public List<DashboardActividadEncargadoResponse> obtenerTareasEncargados() {
+        List<DashboardActividadEncargadoResponse> actividades = new ArrayList<>();
+
+        for (Proyecto proyecto : proyectoRepository.findAll()) {
+            for (ActividadProyecto actividad : proyecto.getActividades()) {
+                if (!"tarea".equalsIgnoreCase(actividad.getTipo())) {
+                    continue;
+                }
+                if (actividad.getResponsable() == null && (actividad.getResponsableNombre() == null || actividad.getResponsableNombre().isBlank())) {
+                    continue;
+                }
+
+                actividades.add(DashboardActividadEncargadoResponse.builder()
+                        .id(actividad.getId())
+                        .responsable(valorODefault(actividad.getResponsableNombre(), actividad.getResponsable() != null ? actividad.getResponsable().getNombreCompleto() : null))
+                        .tarea(valorODefault(actividad.getNombre(), "Actividad"))
+                        .proyecto(proyecto.getNombreProyecto())
+                        .proyectoId(proyecto.getId())
+                        .etapa(proyecto.getEstado().getDisplayName())
+                        .fechas(formatearRangoActividad(actividad))
+                        .estado(valorODefault(actividad.getEstadoActividad(), "Pendiente"))
+                        .build());
+            }
+        }
+
+        actividades.sort(Comparator
+                .comparing(DashboardActividadEncargadoResponse::getProyectoId, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(DashboardActividadEncargadoResponse::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        return actividades;
+    }
+
+    private List<DashboardSerieResponse> construirSerieMensualPorProyecto(
+            List<Proyecto> proyectos,
+            EnumSet<EstadoProyecto> estados,
+            boolean usarFechaFinalizacion) {
+        Map<Month, BigDecimal> acumulado = inicializarSerieMensual();
+
+        for (Proyecto proyecto : proyectos) {
+            if (proyecto.getEstado() == null || !estados.contains(proyecto.getEstado())) {
+                continue;
+            }
+
+            LocalDate fecha = usarFechaFinalizacion ? proyecto.getFechaFinalizacion() : proyecto.getFechaInicio();
+            if (fecha == null) {
+                fecha = proyecto.getFechaRegistro();
+            }
+            if (fecha == null) {
+                continue;
+            }
+
+            Month month = fecha.getMonth();
+            acumulado.put(month, acumulado.get(month).add(BigDecimal.ONE));
+        }
+
+        return java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(index -> DashboardSerieResponse.builder()
+                        .name(MONTH_LABELS[index - 1])
+                        .value(acumulado.getOrDefault(Month.of(index), BigDecimal.ZERO))
+                        .build())
+                .toList();
+    }
+
+    private Map<Month, BigDecimal> inicializarSerieMensual() {
+        Map<Month, BigDecimal> acumulado = new HashMap<>();
+        for (Month month : Month.values()) {
+            acumulado.put(month, BigDecimal.ZERO);
+        }
+        return acumulado;
+    }
+
+    private void acumularMontoMensual(Map<Month, BigDecimal> acumulado, LocalDate fecha, BigDecimal monto) {
+        if (fecha == null) {
+            return;
+        }
+        Month month = fecha.getMonth();
+        acumulado.put(month, acumulado.get(month).add(safe(monto)));
+    }
+
+    private String descripcionMaterial(CostoMaterial material) {
+        String producto = valorODefault(material.getMaterial(), "Material");
+        String comprobante = material.getNroComprobante();
+        if (comprobante == null || comprobante.isBlank()) {
+            return producto;
+        }
+        return producto + " - " + comprobante.trim();
+    }
+
+    private String descripcionManoObra(CostoManoObra manoObra) {
+        String trabajador = valorODefault(manoObra.getTrabajador(), "Mano de obra");
+        String funcion = manoObra.getFuncion();
+        if (funcion == null || funcion.isBlank()) {
+            return trabajador;
+        }
+        return trabajador + " - " + funcion.trim();
+    }
+
+    private String descripcionAdicional(com.trazabilidad.ayni.costo.CostoAdicional adicional) {
+        String descripcion = adicional.getDescripcion();
+        if (descripcion != null && !descripcion.isBlank()) {
+            return descripcion.trim();
+        }
+        return valorODefault(adicional.getCategoria(), CATEGORIA_OTROS_COSTOS);
+    }
+
+    private String responsableProyecto(Proyecto proyecto) {
+        if (proyecto.getResponsableNombre() != null && !proyecto.getResponsableNombre().isBlank()) {
+            return proyecto.getResponsableNombre().trim();
+        }
+        if (proyecto.getResponsable() == null) {
+            return "Sin responsable";
+        }
+        return valorODefault(proyecto.getResponsable().getNombreCompleto(), "Sin responsable");
+    }
+
+    private String formatearRangoActividad(ActividadProyecto actividad) {
+        LocalDate inicio = actividad.getFechaInicio();
+        LocalDate fin = actividad.getFechaFin();
+
+        if (inicio == null && actividad.getFechaRegistro() != null) {
+            inicio = actividad.getFechaRegistro().toLocalDate();
+        }
+        if (fin == null && actividad.getFechaCambioEstado() != null) {
+            fin = actividad.getFechaCambioEstado().toLocalDate();
+        }
+
+        if (inicio == null && fin == null) {
+            return "";
+        }
+        if (fin == null) {
+            return formatearFecha(inicio);
+        }
+        return formatearFecha(inicio) + " - " + formatearFecha(fin);
+    }
+
+    private String formatearFecha(LocalDate fecha) {
+        if (fecha == null) {
+            return "";
+        }
+        return String.format("%02d/%02d/%04d", fecha.getDayOfMonth(), fecha.getMonthValue(), fecha.getYear());
+    }
+
+    private LocalDate toLocalDate(LocalDateTime fecha) {
+        return fecha != null ? fecha.toLocalDate() : null;
+    }
+
+    private BigDecimal safe(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String valorODefault(String value, String defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 }

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * DTO para las estadísticas y métricas financieras de los proyectos en el dashboard.
@@ -34,4 +35,7 @@ public class ProyectoIndicadorResponse {
     private LocalDate durationEnd;
     private Integer tasaRetorno; // ROI %
     private String descripcion;
+    private String ubicacion;
+    private List<String> areas;
+    private LocalDate fechaRegistro;
 }
