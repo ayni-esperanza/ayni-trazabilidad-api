@@ -198,17 +198,11 @@ public class SolicitudService {
         }
 
         /**
-         * Elimina una solicitud.
-         * Solo permite eliminación si el estado es PENDIENTE.
+         * Elimina una solicitud sin restringir el estado actual.
          */
         public void eliminar(Long id) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
-
-                if (!solicitud.esEditable()) {
-                        throw new BadRequestException(
-                                        "Solo se pueden eliminar solicitudes en estado PENDIENTE");
-                }
 
                 proyectoRepository.findBySolicitudId(id)
                                 .ifPresent(proyecto -> proyectoService.eliminarProyecto(proyecto.getId()));

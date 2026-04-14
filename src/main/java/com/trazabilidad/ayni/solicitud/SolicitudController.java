@@ -125,7 +125,6 @@ public class SolicitudController {
     @Operation(summary = "Eliminar solicitud")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Solicitud eliminada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Solo se pueden eliminar solicitudes en estado PENDIENTE"),
             @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
     })
     @DeleteMapping("/{id}")
