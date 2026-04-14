@@ -16,6 +16,7 @@ public class FlujoNodoResponse {
     private Long id;
     private String nombre;
     private String tipo;
+    private String tipoActividad;
     private String estadoActividad;
     private String fechaCambioEstado;
     private Long responsableId;

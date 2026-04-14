@@ -36,6 +36,11 @@ public class ActividadProyecto {
     @Column(name = "tipo", nullable = false, length = 20)
     private String tipo;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_actividad", nullable = false, length = 20)
+    private TipoActividadProyecto tipoActividad = TipoActividadProyecto.DESARROLLO;
+
     @Column(name = "estado_actividad", length = 50)
     private String estadoActividad;
 

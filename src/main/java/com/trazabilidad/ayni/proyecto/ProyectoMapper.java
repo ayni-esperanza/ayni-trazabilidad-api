@@ -141,6 +141,7 @@ public class ProyectoMapper {
                         .id(actividad.getId())
                         .nombre(actividad.getNombre())
                         .tipo(actividad.getTipo())
+                        .tipoActividad(actividad.getTipoActividad() != null ? actividad.getTipoActividad().name() : null)
                         .estadoActividad(actividad.getEstadoActividad())
                         .fechaCambioEstado(actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
                         .responsableId(actividad.getResponsable() != null ? actividad.getResponsable().getId() : null)

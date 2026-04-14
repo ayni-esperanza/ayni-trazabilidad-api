@@ -385,6 +385,7 @@ public class ProyectoService {
                     .proyecto(proyecto)
                     .nombre(nodo.getNombre() != null ? nodo.getNombre() : "Actividad")
                     .tipo(nodo.getTipo() != null ? nodo.getTipo() : "tarea")
+                    .tipoActividad(resolveTipoActividad(nodo.getTipoActividad(), proyecto))
                     .estadoActividad(nodo.getEstadoActividad())
                     .fechaCambioEstado(parseLocalDateTime(nodo.getFechaCambioEstado()))
                     .responsable(responsableActividad)
@@ -429,6 +430,22 @@ public class ProyectoService {
         }
 
         return new ArrayList<>(index.values());
+    }
+
+    private TipoActividadProyecto resolveTipoActividad(String tipoActividad, Proyecto proyecto) {
+        if (tipoActividad != null && !tipoActividad.isBlank()) {
+            try {
+                return TipoActividadProyecto.valueOf(tipoActividad.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        if (proyecto != null && proyecto.getEstado() != null
+                && (proyecto.getEstado() == EstadoProyecto.COMPLETADO || proyecto.getEstado() == EstadoProyecto.FINALIZADO)) {
+            return TipoActividadProyecto.SEGUIMIENTO;
+        }
+
+        return TipoActividadProyecto.DESARROLLO;
     }
 
     private void replaceActividades(Proyecto proyecto, List<ActividadProyecto> nuevasActividades) {

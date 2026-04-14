@@ -1,6 +1,7 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
+import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
@@ -42,6 +43,7 @@ public class ActividadProyectoService {
 
         ActividadProyecto actividad = buildActividadEntity(request, proyecto);
         actividad.setTipo(request.getTipo() != null ? request.getTipo() : "tarea");
+        actividad.setTipoActividad(resolveTipoActividadParaCreacion(proyecto));
         if (actividad.getEstadoActividad() == null) {
             actividad.setEstadoActividad("Pendiente");
         }
@@ -81,6 +83,7 @@ public class ActividadProyectoService {
 
         actividad.setNombre(request.getNombre());
         actividad.setTipo(request.getTipo() != null ? request.getTipo() : actividad.getTipo());
+        actividad.setTipoActividad(resolveTipoActividadExistente(actividad));
         actividad.setEstadoActividad(request.getEstadoActividad());
         actividad.setFechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), actividad.getFechaCambioEstado()));
         Usuario responsable = resolveResponsable(request.getResponsableId());
@@ -138,6 +141,7 @@ public class ActividadProyectoService {
 
             actividad.setNombre(request.getNombre());
             actividad.setTipo(request.getTipo() != null ? request.getTipo() : actividad.getTipo());
+            actividad.setTipoActividad(resolveTipoActividadExistente(actividad));
             actividad.setEstadoActividad(request.getEstadoActividad());
             actividad.setFechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), actividad.getFechaCambioEstado()));
             Usuario responsable = resolveResponsable(request.getResponsableId());
@@ -202,6 +206,7 @@ public class ActividadProyectoService {
                 .proyecto(proyecto)
                 .nombre(request.getNombre())
                 .tipo(request.getTipo() != null ? request.getTipo() : "tarea")
+                .tipoActividad(resolveTipoActividadParaCreacion(proyecto))
                 .estadoActividad(request.getEstadoActividad())
                 .fechaCambioEstado(parseDateTime(request.getFechaCambioEstado(), LocalDateTime.now()))
                 .responsable(responsable)
@@ -299,6 +304,26 @@ public class ActividadProyectoService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuario", responsableId));
     }
 
+    private TipoActividadProyecto resolveTipoActividadParaCreacion(Proyecto proyecto) {
+        if (proyecto == null || proyecto.getEstado() == null) {
+            return TipoActividadProyecto.DESARROLLO;
+        }
+
+        if (proyecto.getEstado() == EstadoProyecto.COMPLETADO || proyecto.getEstado() == EstadoProyecto.FINALIZADO) {
+            return TipoActividadProyecto.SEGUIMIENTO;
+        }
+
+        return TipoActividadProyecto.DESARROLLO;
+    }
+
+    private TipoActividadProyecto resolveTipoActividadExistente(ActividadProyecto actividad) {
+        if (actividad != null && actividad.getTipoActividad() != null) {
+            return actividad.getTipoActividad();
+        }
+
+        return resolveTipoActividadParaCreacion(actividad != null ? actividad.getProyecto() : null);
+    }
+
     private String resolveResponsableNombre(Usuario responsable, String responsableNombre) {
         if (responsableNombre != null && !responsableNombre.isBlank()) {
             return responsableNombre.trim();
@@ -324,6 +349,7 @@ public class ActividadProyectoService {
                 .id(actividad.getId())
                 .nombre(actividad.getNombre())
                 .tipo(actividad.getTipo())
+                .tipoActividad(actividad.getTipoActividad() != null ? actividad.getTipoActividad().name() : null)
                 .estadoActividad(actividad.getEstadoActividad())
                 .fechaCambioEstado(actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
                 .responsableId(actividad.getResponsable() != null ? actividad.getResponsable().getId() : null)
