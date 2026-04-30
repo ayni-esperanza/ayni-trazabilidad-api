@@ -38,7 +38,7 @@ public class ActividadProyecto {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_actividad", nullable = false, length = 20)
+    @Column(name = "tipo_actividad", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'DESARROLLO' NOT NULL")
     private TipoActividadProyecto tipoActividad = TipoActividadProyecto.DESARROLLO;
 
     @Column(name = "estado_actividad", length = 50)

@@ -1,12 +1,16 @@
 package com.trazabilidad.ayni.usuario;
 
+import com.trazabilidad.ayni.proyecto.ActividadProyecto;
+import com.trazabilidad.ayni.proyecto.ActividadProyectoRepository;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.rol.RolRepository;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
-
+import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.DuplicateEntityException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.shared.util.Constants;
+import com.trazabilidad.ayni.solicitud.SolicitudRepository;
+import com.trazabilidad.ayni.proyecto.ProyectoRepository;
 import com.trazabilidad.ayni.usuario.dto.EstadisticasUsuariosResponse;
 import com.trazabilidad.ayni.usuario.dto.UsuarioRequest;
 import com.trazabilidad.ayni.usuario.dto.UsuarioResponse;
@@ -39,6 +43,9 @@ public class UsuarioService {
         private final RolRepository rolRepository;
         private final UsuarioMapper usuarioMapper;
         private final PasswordEncoder passwordEncoder;
+        private final SolicitudRepository solicitudRepository;
+        private final ProyectoRepository proyectoRepository;
+        private final ActividadProyectoRepository actividadProyectoRepository;
 
         /**
          * Obtiene usuarios paginados con filtros opcionales
@@ -197,11 +204,56 @@ public class UsuarioService {
                 Usuario usuario = usuarioRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
 
-                // Borrado lógico
                 usuario.setActivo(false);
                 usuarioRepository.save(usuario);
 
-                log.info("Usuario eliminado exitosamente con ID: {}", id);
+                log.info("Usuario eliminado lógicamente con ID: {}", id);
+        }
+
+        /**
+         * Elimina físicamente un usuario de la base de datos.
+         *
+         * Precondiciones:
+         * - El usuario no puede tener solicitudes asociadas como responsable.
+         * - El usuario no puede tener proyectos asociados como responsable.
+         * Las actividades donde figure como responsable se desvinculan (responsable = null).
+         * Los roles asociados se eliminan automáticamente por la FK con ON DELETE CASCADE.
+         */
+        public void eliminarUsuarioPermanente(Long id) {
+                log.info("Eliminando (físicamente) usuario con ID: {}", id);
+
+                Usuario usuario = usuarioRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+
+                long totalSolicitudes = solicitudRepository.countByResponsableId(id);
+                if (totalSolicitudes > 0) {
+                        throw new BadRequestException(
+                                        String.format("No se puede eliminar el usuario con ID %d porque tiene %d solicitud(es) asignada(s) como responsable. Reasigne o elimine las solicitudes primero.",
+                                                        id, totalSolicitudes));
+                }
+
+                List<?> proyectosAsignados = proyectoRepository.findByResponsableId(id);
+                if (!proyectosAsignados.isEmpty()) {
+                        throw new BadRequestException(
+                                        String.format("No se puede eliminar el usuario con ID %d porque tiene %d proyecto(s) asignado(s) como responsable. Reasigne o elimine los proyectos primero.",
+                                                        id, proyectosAsignados.size()));
+                }
+
+                List<ActividadProyecto> actividades = actividadProyectoRepository.findByResponsableId(id);
+                if (!actividades.isEmpty()) {
+                        actividades.forEach(act -> {
+                                act.setResponsable(null);
+                                act.setResponsableNombre(null);
+                        });
+                        actividadProyectoRepository.saveAll(actividades);
+                        log.info("Se desvinculó al usuario ID {} de {} actividad(es)", id, actividades.size());
+                }
+
+                usuario.getRoles().clear();
+                usuarioRepository.save(usuario);
+
+                usuarioRepository.delete(usuario);
+                log.info("Usuario eliminado físicamente con ID: {}", id);
         }
 
         /**

@@ -82,7 +82,17 @@ public class UsuarioController {
     public ResponseEntity<MessageResponse> eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminarUsuario(id);
         MessageResponse response = MessageResponse.builder()
-                .message("Usuario eliminado exitosamente")
+                .message("Usuario desactivado exitosamente")
+                .success(true)
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}/permanente")
+    public ResponseEntity<MessageResponse> eliminarUsuarioPermanente(@PathVariable Long id) {
+        usuarioService.eliminarUsuarioPermanente(id);
+        MessageResponse response = MessageResponse.builder()
+                .message("Usuario eliminado permanentemente del sistema")
                 .success(true)
                 .build();
         return ResponseEntity.ok(response);

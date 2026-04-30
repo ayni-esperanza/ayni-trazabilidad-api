@@ -9,4 +9,6 @@ public interface ComentarioActividadRepository extends JpaRepository<ComentarioA
     List<ComentarioActividad> findByProyectoIdOrderByIdAsc(Long proyectoId);
 
     Optional<ComentarioActividad> findByIdAndProyectoId(Long id, Long proyectoId);
+
+    void deleteByActividadId(Long actividadId);
 }

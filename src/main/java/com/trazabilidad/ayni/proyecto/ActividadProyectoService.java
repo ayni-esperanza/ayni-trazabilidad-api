@@ -30,6 +30,7 @@ public class ActividadProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final ActividadProyectoRepository actividadProyectoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ComentarioActividadRepository comentarioActividadRepository;
 
     @Transactional(readOnly = true)
     public List<FlujoNodoResponse> listarPorProyecto(Long proyectoId) {
@@ -119,6 +120,8 @@ public class ActividadProyectoService {
         for (ActividadProyecto item : actividades) {
             item.getSiguientes().removeIf(s -> Objects.equals(s.getId(), actividadId));
         }
+
+        comentarioActividadRepository.deleteByActividadId(actividadId);
 
         actividadProyectoRepository.delete(actividad);
     }
