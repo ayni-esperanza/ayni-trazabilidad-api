@@ -38,8 +38,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: ${MAX_FILE_SIZE:2MB}
-      max-request-size: ${MAX_REQUEST_SIZE:2MB}
+      max-file-size: ${MAX_FILE_SIZE:50MB}
+      max-request-size: ${MAX_REQUEST_SIZE:55MB}
 
 # ==================== SERVER CONFIGURATION ====================
 server:
@@ -90,6 +90,14 @@ app:
     bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
   storage:
     bucket-base-url: ${BUCKET_BASE_URL:}
+    upload:
+      max-final-document-size: ${STORAGE_MAX_FINAL_DOCUMENT_SIZE:25MB}
+      max-pdf-source-size: ${STORAGE_MAX_PDF_SOURCE_SIZE:50MB}
+      max-spreadsheet-source-size: ${STORAGE_MAX_SPREADSHEET_SOURCE_SIZE:50MB}
+      pdf-optimizer:
+        enabled: ${PDF_GHOSTSCRIPT_ENABLED:true}
+        command: ${PDF_GHOSTSCRIPT_COMMAND:}
+        timeout-seconds: ${PDF_GHOSTSCRIPT_TIMEOUT_SECONDS:120}
     r2:
       endpoint: ${R2_ENDPOINT:}
       bucket-name: ${R2_BUCKET_NAME:}

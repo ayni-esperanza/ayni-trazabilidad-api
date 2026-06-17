@@ -61,6 +61,8 @@ public class R2PresignService {
     private final String secretAccessKey;
     private final long expirationSeconds;
     private final StorageUrlResolver storageUrlResolver;
+    private final PdfUploadOptimizerService pdfUploadOptimizerService;
+    private final SpreadsheetUploadOptimizerService spreadsheetUploadOptimizerService;
 
     public R2PresignService(
             @Value("${app.storage.r2.endpoint:}") String endpoint,
@@ -68,13 +70,17 @@ public class R2PresignService {
             @Value("${app.storage.r2.access-key-id:}") String accessKeyId,
             @Value("${app.storage.r2.secret-access-key:}") String secretAccessKey,
             @Value("${app.storage.r2.presign-expiration-seconds:300}") long expirationSeconds,
-            StorageUrlResolver storageUrlResolver) {
+            StorageUrlResolver storageUrlResolver,
+            PdfUploadOptimizerService pdfUploadOptimizerService,
+            SpreadsheetUploadOptimizerService spreadsheetUploadOptimizerService) {
         this.endpoint = endpoint != null ? endpoint.trim() : "";
         this.bucketName = bucketName != null ? bucketName.trim() : "";
         this.accessKeyId = accessKeyId != null ? accessKeyId.trim() : "";
         this.secretAccessKey = secretAccessKey != null ? secretAccessKey.trim() : "";
         this.expirationSeconds = expirationSeconds;
         this.storageUrlResolver = storageUrlResolver;
+        this.pdfUploadOptimizerService = pdfUploadOptimizerService;
+        this.spreadsheetUploadOptimizerService = spreadsheetUploadOptimizerService;
     }
 
     public PresignUploadResponse createPresignedUpload(PresignUploadRequest request, Long userId) {
@@ -118,16 +124,28 @@ public class R2PresignService {
         validateConfiguration();
         validateMultipart(file);
 
-        PresignUploadRequest syntheticRequest = new PresignUploadRequest(
+        PresignUploadRequest originalRequest = new PresignUploadRequest(
                 file.getOriginalFilename(),
                 file.getContentType(),
                 carpeta,
                 proyectoId,
                 actividadId);
-        validateRequest(syntheticRequest);
+        validateRequest(originalRequest);
 
-        String objectKey = buildObjectKey(syntheticRequest, userId);
-        String contentType = file.getContentType().trim();
+        PreparedUploadObject preparedFile = spreadsheetUploadOptimizerService.supports(file.getOriginalFilename(), file.getContentType())
+                ? spreadsheetUploadOptimizerService.prepareForUpload(file)
+                : pdfUploadOptimizerService.prepareForUpload(file);
+
+        PresignUploadRequest normalizedRequest = new PresignUploadRequest(
+                preparedFile.fileName(),
+                preparedFile.contentType(),
+                carpeta,
+                proyectoId,
+                actividadId);
+        validateRequest(normalizedRequest);
+
+        String objectKey = buildObjectKey(normalizedRequest, userId);
+        String contentType = preparedFile.contentType().trim();
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
@@ -138,12 +156,15 @@ public class R2PresignService {
         try (S3Client s3Client = buildS3Client()) {
             PutObjectResponse putObjectResponse = s3Client.putObject(
                     putObjectRequest,
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+                    RequestBody.fromBytes(preparedFile.content()));
 
             return new UploadObjectResponse(
                     objectKey,
                     storageUrlResolver.resolvePublicUrl(objectKey),
-                    putObjectResponse.eTag());
+                    putObjectResponse.eTag(),
+                    preparedFile.size(),
+                    preparedFile.fileName(),
+                    preparedFile.contentType());
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo subir el archivo al bucket R2", ex);
         }

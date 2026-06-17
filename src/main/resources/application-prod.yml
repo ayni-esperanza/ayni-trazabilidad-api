@@ -18,7 +18,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:validate} # validate en prod; usar update solo para bootstrap controlado
-    show-sql: false # No mostrar SQL en producción
+    show-sql: ${SHOW_SQL:false} # No mostrar SQL en producción
     properties:
       hibernate:
         format_sql: false
@@ -30,19 +30,19 @@ spring:
 
   # ==================== FLYWAY HABILITADO EN PRODUCCIÓN ====================
   flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
-    validate-on-migrate: true
-    locations: classpath:db/migration
-    out-of-order: false
-    placeholder-replacement: true
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:true}
+    baseline-version: ${SPRING_FLYWAY_BASELINE_VERSION:0}
+    validate-on-migrate: ${SPRING_FLYWAY_VALIDATE_ON_MIGRATE:true}
+    locations: ${SPRING_FLYWAY_LOCATIONS:classpath:db/migration}
+    out-of-order: ${SPRING_FLYWAY_OUT_OF_ORDER:false}
+    placeholder-replacement: ${SPRING_FLYWAY_PLACEHOLDER_REPLACEMENT:true}
 
 # ==================== LOGGING PRODUCCIÓN ====================
 logging:
   level:
     root: WARN
-    com.trazabilidad.ayni: INFO
+    com.trazabilidad.ayni: ${LOG_LEVEL:INFO}
     org.springframework.security: WARN
     org.hibernate: WARN # Deshabilitar todos los logs de Hibernate
     org.hibernate.SQL: OFF # Completamente deshabilitado

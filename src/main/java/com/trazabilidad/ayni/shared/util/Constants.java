@@ -111,7 +111,7 @@ public final class Constants {
         private Files() {
         }
 
-        public static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB en bytes
+        public static final long MAX_FILE_SIZE = 25L * 1024 * 1024; // Limite final permitido para documentos
         public static final String[] ALLOWED_IMAGE_TYPES = { "image/jpeg", "image/jpg", "image/png", "image/gif" };
     }
 
