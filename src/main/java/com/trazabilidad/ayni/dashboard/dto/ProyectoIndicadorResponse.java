@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,4 +39,5 @@ public class ProyectoIndicadorResponse {
     private String ubicacion;
     private List<String> areas;
     private LocalDate fechaRegistro;
+    private LocalDateTime fechaActualizacion;
 }

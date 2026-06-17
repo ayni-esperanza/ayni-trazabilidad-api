@@ -108,6 +108,12 @@ public class Proyecto extends Auditable {
     @Column(name = "responsable_nombre", length = 200)
     private String responsableNombre;
 
+    @Column(name = "responsable_anterior_id")
+    private Long responsableAnteriorId;
+
+    @Column(name = "responsable_anterior_nombre", length = 200)
+    private String responsableAnteriorNombre;
+
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrdenCompra> ordenesCompra = new ArrayList<>();

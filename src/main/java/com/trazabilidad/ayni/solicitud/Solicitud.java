@@ -96,6 +96,10 @@ public class Solicitud extends Auditable {
     @NotNull(message = "El responsable es obligatorio")
     private Usuario responsable;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creador_id")
+    private Usuario creador;
+
     /**
      * Helper method para cambiar el estado de la solicitud.
      * Delega la validación de transición al enum.

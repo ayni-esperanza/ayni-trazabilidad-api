@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +20,12 @@ public class OrdenCompraResponse {
     private String numero;
     private LocalDate fecha;
     private String tipo;
+    private String tipoActividad;
     private String numeroLicitacion;
     private String numeroSolicitud;
     private BigDecimal total;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
     @Builder.Default
     private List<FlujoAdjuntoResponse> adjuntos = new ArrayList<>();
 }

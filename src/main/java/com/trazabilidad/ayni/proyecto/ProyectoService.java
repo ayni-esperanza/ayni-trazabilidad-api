@@ -47,6 +47,7 @@ public class ProyectoService {
     private final UsuarioRepository usuarioRepository;
     private final CostoAdicionalCategoriaRepository costoAdicionalCategoriaRepository;
     private final StorageUrlResolver storageUrlResolver;
+    private final ProyectoLifecycleService proyectoLifecycleService;
 
     // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
     private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
@@ -95,6 +96,7 @@ public class ProyectoService {
             EstadoProyecto estado,
             Long responsableId,
             Pageable pageable) {
+        proyectoLifecycleService.archivarProyectosInactivos();
         Pageable translatedPageable = translatePageable(pageable);
         Page<Proyecto> page = proyectoRepository.buscarConFiltros(
                 search, estado, responsableId, translatedPageable);
@@ -115,6 +117,7 @@ public class ProyectoService {
      */
     @Transactional(readOnly = true)
     public ProyectoResponse obtenerPorId(Long id) {
+        proyectoLifecycleService.archivarProyectosInactivos();
         Proyecto proyecto = proyectoRepository.findWithEtapasById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
 
@@ -163,7 +166,7 @@ public class ProyectoService {
                 .areas(request.getAreas() != null ? request.getAreas() : solicitud.getAreas())
                 .costo(solicitud.getCosto())
                 .descripcion(solicitud.getDescripcion())
-                .fechaRegistro(LocalDate.now())
+                .fechaRegistro(solicitud.getFechaSolicitud() != null ? solicitud.getFechaSolicitud() : LocalDate.now())
                 .fechaInicio(fechaInicio)
                 .fechaFinalizacion(fechaFinalizacion)
                 .solicitud(solicitud)
@@ -229,6 +232,11 @@ public class ProyectoService {
 
         if (request.getResponsableId() != null
                 && (proyecto.getResponsable() == null || !proyecto.getResponsable().getId().equals(request.getResponsableId()))) {
+            if (proyecto.getResponsable() != null) {
+                proyecto.setResponsableAnteriorId(proyecto.getResponsable().getId());
+                proyecto.setResponsableAnteriorNombre(obtenerNombreResponsableActual(proyecto));
+            }
+
             Usuario responsable = usuarioRepository.findById(request.getResponsableId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
             proyecto.setResponsable(responsable);
@@ -239,6 +247,7 @@ public class ProyectoService {
             replaceComentarios(proyecto, comentariosFromRequest(request.getComentariosAdicionalesActividad(), proyecto));
         }
 
+        proyectoLifecycleService.prepararProyectoParaModificacion(proyecto);
         Proyecto updated = proyectoRepository.save(proyecto);
         return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
@@ -325,6 +334,7 @@ public class ProyectoService {
      */
     @Transactional(readOnly = true)
     public EstadisticasProyectoResponse obtenerEstadisticas() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         long total = proyectoRepository.count();
         long pendientes = proyectoRepository.countByEstado(EstadoProyecto.PENDIENTE);
         long enProceso = proyectoRepository.countByEstado(EstadoProyecto.EN_PROCESO);
@@ -356,6 +366,7 @@ public class ProyectoService {
                         .numero(oc.getNumero())
                         .fecha(oc.getFecha())
                         .tipo(oc.getTipo())
+                        .tipoActividad(resolveTipoActividadOrdenCompra(oc.getTipoActividad(), proyecto))
                         .numeroLicitacion(oc.getNumeroLicitacion())
                         .numeroSolicitud(oc.getNumeroSolicitud())
                         .total(oc.getTotal())
@@ -448,6 +459,10 @@ public class ProyectoService {
         return TipoActividadProyecto.DESARROLLO;
     }
 
+    private TipoActividadProyecto resolveTipoActividadOrdenCompra(String tipoActividad, Proyecto proyecto) {
+        return resolveTipoActividad(tipoActividad, proyecto);
+    }
+
     private void replaceActividades(Proyecto proyecto, List<ActividadProyecto> nuevasActividades) {
         if (proyecto.getActividades() == null) {
             proyecto.setActividades(new ArrayList<>());
@@ -530,6 +545,16 @@ public class ProyectoService {
         if (nuevosComentarios != null && !nuevosComentarios.isEmpty()) {
             proyecto.getComentariosAdicionalesActividad().addAll(nuevosComentarios);
         }
+    }
+
+    private String obtenerNombreResponsableActual(Proyecto proyecto) {
+        if (proyecto == null) {
+            return null;
+        }
+        if (proyecto.getResponsableNombre() != null && !proyecto.getResponsableNombre().isBlank()) {
+            return proyecto.getResponsableNombre().trim();
+        }
+        return proyecto.getResponsable() != null ? proyecto.getResponsable().getNombreCompleto() : null;
     }
 
     private LocalDate parseLocalDate(String value) {

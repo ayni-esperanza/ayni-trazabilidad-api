@@ -22,14 +22,26 @@ public class CostoManoObraRequest {
     @NotBlank(message = "El trabajador es obligatorio")
     private String trabajador;
 
+    private String oficio;
+
     private String cargo;
 
     @Positive(message = "Los dias trabajados deben ser positivos")
     private BigDecimal diasTrabajando;
 
-    @NotNull(message = "El costo por día es obligatorio")
-    @Positive(message = "El costo por día debe ser positivo")
+    @NotNull(message = "El costo por dia es obligatorio")
+    @Positive(message = "El costo por dia debe ser positivo")
     private BigDecimal costoPorDia;
 
     private Long dependenciaActividadId;
+
+    public String resolveOficio() {
+        if (oficio != null && !oficio.isBlank()) {
+            return oficio.trim();
+        }
+        if (cargo != null && !cargo.isBlank()) {
+            return cargo.trim();
+        }
+        return "";
+    }
 }

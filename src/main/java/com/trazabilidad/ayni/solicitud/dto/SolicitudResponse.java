@@ -27,6 +27,8 @@ public class SolicitudResponse {
     private BigDecimal costo;
     private Long responsableId;
     private String responsableNombre;
+    private Long creadorId;
+    private String creadorNombre;
     private String descripcion;
     private String ubicacion;
     private List<String> areas;

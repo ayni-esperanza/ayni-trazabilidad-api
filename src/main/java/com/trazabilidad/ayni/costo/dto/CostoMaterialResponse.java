@@ -21,6 +21,8 @@ public class CostoMaterialResponse {
     private Long id;
     private LocalDate fecha;
     private String nroComprobante;
+    private Long tipoId;
+    private String tipo;
     private String producto;
     private String unidad;
     private BigDecimal cantidad;

@@ -19,6 +19,29 @@ public interface CostoManoObraRepository extends JpaRepository<CostoManoObra, Lo
      */
     List<CostoManoObra> findByProyectoId(Long proyectoId);
 
+    List<CostoManoObra> findByProyectoIdAndFuncionIgnoreCase(Long proyectoId, String funcion);
+
+    List<CostoManoObra> findByFuncionIgnoreCase(String funcion);
+
+    @Query("""
+            SELECT DISTINCT c.funcion
+            FROM CostoManoObra c
+            WHERE c.proyecto.id = :proyectoId
+              AND c.funcion IS NOT NULL
+              AND TRIM(c.funcion) <> ''
+            ORDER BY c.funcion
+            """)
+    List<String> findDistinctOficiosByProyectoId(@Param("proyectoId") Long proyectoId);
+
+    @Query("""
+            SELECT DISTINCT c.funcion
+            FROM CostoManoObra c
+            WHERE c.funcion IS NOT NULL
+              AND TRIM(c.funcion) <> ''
+            ORDER BY c.funcion
+            """)
+    List<String> findDistinctOficios();
+
     /**
      * Elimina todos los costos de mano de obra de un proyecto.
      */

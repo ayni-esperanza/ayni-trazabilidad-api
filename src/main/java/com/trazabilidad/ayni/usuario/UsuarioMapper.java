@@ -19,9 +19,6 @@ public class UsuarioMapper {
 
     private final RolMapper rolMapper;
 
-    /**
-     * Convierte entidad a DTO de respuesta
-     */
     public UsuarioResponse toResponse(Usuario usuario) {
         if (usuario == null) {
             return null;
@@ -34,7 +31,7 @@ public class UsuarioMapper {
                 .email(usuario.getEmail())
                 .username(usuario.getUsername())
                 .telefono(usuario.getTelefono())
-                .cargo(usuario.getCargo())
+                .cargo("")
                 .area(usuario.getArea())
                 .fechaIngreso(usuario.getFechaIngreso())
                 .activo(usuario.getActivo())
@@ -45,9 +42,6 @@ public class UsuarioMapper {
                 .build();
     }
 
-    /**
-     * Convierte DTO request a entidad nueva
-     */
     public Usuario toEntity(UsuarioRequest request, Rol rol, String passwordEncriptado) {
         return Usuario.builder()
                 .nombre(request.getNombre())
@@ -56,7 +50,6 @@ public class UsuarioMapper {
                 .email(request.getEmail())
                 .password(passwordEncriptado)
                 .telefono(request.getTelefono())
-                .cargo(request.getCargo())
                 .area(request.getArea())
                 .foto(request.getFoto())
                 .fechaIngreso(LocalDateTime.now())
@@ -64,16 +57,12 @@ public class UsuarioMapper {
                 .build();
     }
 
-    /**
-     * Actualiza entidad existente con datos del DTO request
-     */
     public void updateEntity(Usuario usuario, UsuarioRequest request, Rol rol) {
         usuario.setNombre(request.getNombre());
         usuario.setApellido(request.getApellido());
         usuario.setUsername(request.getUsername());
         usuario.setEmail(request.getEmail());
         usuario.setTelefono(request.getTelefono());
-        usuario.setCargo(request.getCargo());
         usuario.setArea(request.getArea());
         usuario.setFoto(request.getFoto());
 
@@ -81,7 +70,6 @@ public class UsuarioMapper {
             usuario.setActivo(request.getActivo());
         }
 
-        // Actualizar roles
         usuario.getRoles().clear();
         usuario.agregarRol(rol);
     }

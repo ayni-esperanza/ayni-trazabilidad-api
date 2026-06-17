@@ -15,9 +15,11 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class OrdenCompraRequest {
+    private Long id;
     private String numero;
     private LocalDate fecha;
     private String tipo;
+    private String tipoActividad;
     private String numeroLicitacion;
     private String numeroSolicitud;
     private BigDecimal total;

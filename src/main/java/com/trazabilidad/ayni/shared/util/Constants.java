@@ -125,6 +125,7 @@ public final class Constants {
         // Estados comunes
         public static final String PENDIENTE = "PENDIENTE";
         public static final String EN_PROCESO = "EN_PROCESO";
+        public static final String ARCHIVADO = "ARCHIVADO";
         public static final String COMPLETADO = "COMPLETADO";
         public static final String CANCELADO = "CANCELADO";
         public static final String FINALIZADO = "FINALIZADO";

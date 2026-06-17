@@ -5,6 +5,7 @@ import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
+import com.trazabilidad.ayni.shared.security.CurrentUserService;
 import com.trazabilidad.ayni.solicitud.dto.EstadisticasSolicitudResponse;
 import com.trazabilidad.ayni.solicitud.dto.ResponsableResponse;
 import com.trazabilidad.ayni.solicitud.dto.SolicitudRequest;
@@ -18,14 +19,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Servicio para gestionar solicitudes.
@@ -40,6 +43,7 @@ public class SolicitudService {
         private final UsuarioRepository usuarioRepository;
         private final ProyectoRepository proyectoRepository;
         private final ProyectoService proyectoService;
+        private final CurrentUserService currentUserService;
 
         // Mapeo de propiedades Java a nombres de columnas SQL (snake_case)
         private static final Map<String, String> PROPERTY_TO_COLUMN_MAP = new HashMap<>() {
@@ -135,6 +139,7 @@ public class SolicitudService {
                 }
 
                 Solicitud solicitud = SolicitudMapper.toEntity(request, responsable);
+                solicitud.setCreador(resolveCurrentUsuario());
                 Solicitud saved = solicitudRepository.save(solicitud);
 
                 return SolicitudMapper.toResponse(saved);
@@ -147,6 +152,8 @@ public class SolicitudService {
         public SolicitudResponse actualizar(Long id, SolicitudRequest request) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+
+                validarPermisoGestion(solicitud);
 
                 if (!solicitud.esEditable()) {
                         throw new BadRequestException(
@@ -171,6 +178,9 @@ public class SolicitudService {
                 }
 
                 SolicitudMapper.updateEntity(solicitud, request, responsable);
+                if (solicitud.getCreador() == null && !currentUserService.isAdmin()) {
+                        solicitud.setCreador(resolveCurrentUsuario());
+                }
                 Solicitud updated = solicitudRepository.save(solicitud);
 
                 return SolicitudMapper.toResponse(updated);
@@ -183,6 +193,8 @@ public class SolicitudService {
         public SolicitudResponse cambiarEstado(Long id, CambiarEstadoRequest request) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+
+                validarPermisoGestion(solicitud);
 
                 EstadoSolicitud nuevoEstado;
                 try {
@@ -203,6 +215,8 @@ public class SolicitudService {
         public void eliminar(Long id) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
+
+                validarPermisoGestion(solicitud);
 
                 proyectoRepository.findBySolicitudId(id)
                                 .ifPresent(proyecto -> proyectoService.eliminarProyecto(proyecto.getId()));
@@ -238,7 +252,7 @@ public class SolicitudService {
                                 .map(usuario -> ResponsableResponse.builder()
                                                 .id(usuario.getId())
                                                 .nombre(usuario.getNombreCompleto().trim())
-                                                .cargo(usuario.getCargo())
+                                                .cargo("")
                                                 .email(usuario.getEmail())
                                                 .build())
                                 .toList();
@@ -257,5 +271,30 @@ public class SolicitudService {
                                                 || estado.name().equalsIgnoreCase(normalizado.replace(" ", "_")))
                                 .findFirst()
                                 .orElseThrow(() -> new IllegalArgumentException("Estado inválido: " + valorEstado));
+        }
+        private void validarPermisoGestion(Solicitud solicitud) {
+                if (currentUserService.isAdmin()) {
+                        return;
+                }
+
+                Long ownerId = resolveOwnerId(solicitud);
+                Long currentUserId = currentUserService.getCurrentUserId();
+
+                if (ownerId == null || !Objects.equals(ownerId, currentUserId)) {
+                        throw new AccessDeniedException("Solo puedes modificar las solicitudes que creaste");
+                }
+        }
+
+        private Long resolveOwnerId(Solicitud solicitud) {
+                if (solicitud.getCreador() != null) {
+                        return solicitud.getCreador().getId();
+                }
+                return solicitud.getResponsable() != null ? solicitud.getResponsable().getId() : null;
+        }
+
+        private Usuario resolveCurrentUsuario() {
+                Long currentUserId = currentUserService.getCurrentUserId();
+                return usuarioRepository.findById(currentUserId)
+                                .orElseThrow(() -> new EntityNotFoundException("Usuario", currentUserId));
         }
 }

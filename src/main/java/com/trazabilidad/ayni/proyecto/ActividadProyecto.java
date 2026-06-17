@@ -51,11 +51,18 @@ public class ActividadProyecto {
     @JoinColumn(name = "responsable_id")
     private Usuario responsable;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creador_id")
+    private Usuario creador;
+
     @Column(name = "responsable_nombre", length = 200)
     private String responsableNombre;
 
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro;
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
 
     @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;

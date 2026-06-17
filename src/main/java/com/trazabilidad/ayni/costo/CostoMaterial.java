@@ -34,6 +34,13 @@ public class CostoMaterial extends Auditable {
     @Column(nullable = false, length = 200)
     private String material;
 
+    @Column(length = 120)
+    private String tipo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipo_material_id")
+    private CostoMaterialTipo tipoMaterial;
+
     @Column(length = 50)
     private String unidad;
 

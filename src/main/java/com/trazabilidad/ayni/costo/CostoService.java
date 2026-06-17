@@ -2,7 +2,9 @@ package com.trazabilidad.ayni.costo;
 
 import com.trazabilidad.ayni.costo.dto.*;
 import com.trazabilidad.ayni.proyecto.Proyecto;
+import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Servicio para gestionar costos de proyectos.
@@ -24,7 +28,10 @@ public class CostoService {
     private final CostoManoObraRepository costoManoObraRepository;
     private final CostoAdicionalRepository costoAdicionalRepository;
     private final CostoAdicionalCategoriaRepository costoAdicionalCategoriaRepository;
+    private final CostoMaterialTipoRepository costoMaterialTipoRepository;
+    private final CostoManoObraOficioRepository costoManoObraOficioRepository;
     private final ProyectoRepository proyectoRepository;
+    private final ProyectoLifecycleService proyectoLifecycleService;
 
     // ==================== CostoMaterial ====================
 
@@ -38,6 +45,69 @@ public class CostoService {
         return CostoMapper.toMaterialResponseList(materiales);
     }
 
+    @Transactional(readOnly = true)
+    public List<String> obtenerTiposMaterial(Long proyectoId) {
+        validarProyectoExiste(proyectoId);
+        List<String> tiposPersistidos = costoMaterialTipoRepository.findAllByOrderByNombreAsc().stream()
+                .map(CostoMaterialTipo::getNombre)
+                .toList();
+        List<String> tiposRelacionados = costoMaterialRepository.findDistinctTiposRelacionados();
+        List<String> tiposLegacy = costoMaterialRepository.findDistinctTipos();
+        return combinarNombresCatalogo(tiposPersistidos, combinarNombresCatalogo(tiposRelacionados, tiposLegacy));
+    }
+
+    @Transactional(readOnly = true)
+    public List<CostoCatalogoResponse> obtenerTiposMaterialPersistidos(Long proyectoId) {
+        validarProyectoExiste(proyectoId);
+        return costoMaterialTipoRepository.findAllByOrderByNombreAsc().stream()
+                .map(this::toCatalogoResponse)
+                .toList();
+    }
+
+    public CostoCatalogoResponse registrarTipoMaterial(Long proyectoId, CostoCatalogoRequest request) {
+        Proyecto proyecto = obtenerProyecto(proyectoId);
+        String nombre = normalizarNombreCatalogo(request.getNombre());
+
+        CostoMaterialTipo tipo = costoMaterialTipoRepository.findByNombreIgnoreCase(nombre)
+                .orElseGet(() -> costoMaterialTipoRepository.save(CostoMaterialTipo.builder()
+                        .nombre(nombre)
+                        .build()));
+
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
+        return toCatalogoResponse(tipo);
+    }
+
+    public CostoCatalogoResponse actualizarTipoMaterial(Long proyectoId, Long tipoId, CostoCatalogoRequest request) {
+        obtenerProyecto(proyectoId);
+        CostoMaterialTipo tipo = costoMaterialTipoRepository.findById(tipoId)
+                .orElseThrow(() -> new EntityNotFoundException("CostoMaterialTipo", tipoId));
+        String nombreNuevo = normalizarNombreCatalogo(request.getNombre());
+
+        costoMaterialTipoRepository.findByNombreIgnoreCase(nombreNuevo)
+                .filter(existente -> !Objects.equals(existente.getId(), tipoId))
+                .ifPresent(existente -> {
+                    throw new BadRequestException("Ya existe un tipo de material con ese nombre en el sistema");
+                });
+
+        String nombreAnterior = tipo.getNombre();
+        tipo.setNombre(nombreNuevo);
+        tipo = costoMaterialTipoRepository.save(tipo);
+        actualizarTiposMaterialRelacionados(proyectoId, tipo, nombreAnterior, nombreNuevo);
+        return toCatalogoResponse(tipo);
+    }
+
+    public void eliminarTipoMaterial(Long proyectoId, Long tipoId) {
+        obtenerProyecto(proyectoId);
+        CostoMaterialTipo tipo = costoMaterialTipoRepository.findById(tipoId)
+                .orElseThrow(() -> new EntityNotFoundException("CostoMaterialTipo", tipoId));
+        if (!costoMaterialRepository.findByTipoMaterialId(tipoId).isEmpty()
+                || !costoMaterialRepository.findByTipoIgnoreCase(tipo.getNombre()).isEmpty()) {
+            throw new BadRequestException("No se puede eliminar el tipo de material porque está en uso");
+        }
+        costoMaterialTipoRepository.delete(tipo);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
+    }
+
     /**
      * Registra un nuevo costo de material.
      */
@@ -45,8 +115,10 @@ public class CostoService {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
         CostoMaterial material = CostoMapper.toMaterialEntity(request, proyecto);
+        asignarTipoMaterial(material, proyecto, request);
         material = costoMaterialRepository.save(material);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toMaterialResponse(material);
     }
 
@@ -57,11 +129,16 @@ public class CostoService {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
         List<CostoMaterial> materiales = requests.stream()
-                .map(request -> CostoMapper.toMaterialEntity(request, proyecto))
+                .map(request -> {
+                    CostoMaterial material = CostoMapper.toMaterialEntity(request, proyecto);
+                    asignarTipoMaterial(material, proyecto, request);
+                    return material;
+                })
                 .toList();
 
         materiales = costoMaterialRepository.saveAll(materiales);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toMaterialResponseList(materiales);
     }
 
@@ -76,8 +153,10 @@ public class CostoService {
         }
 
         CostoMapper.updateMaterialEntity(material, request);
+        asignarTipoMaterial(material, material.getProyecto(), request);
         material = costoMaterialRepository.save(material);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(material.getProyecto());
         return CostoMapper.toMaterialResponse(material);
     }
 
@@ -91,6 +170,7 @@ public class CostoService {
             throw new EntityNotFoundException("CostoMaterial", id);
         }
         costoMaterialRepository.delete(material);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
     // ==================== CostoManoObra ====================
@@ -105,6 +185,67 @@ public class CostoService {
         return CostoMapper.toManoObraResponseList(manoObra);
     }
 
+    @Transactional(readOnly = true)
+    public List<String> obtenerOficiosManoObra(Long proyectoId) {
+        validarProyectoExiste(proyectoId);
+        List<String> oficiosPersistidos = costoManoObraOficioRepository.findAllByOrderByNombreAsc().stream()
+                .map(CostoManoObraOficio::getNombre)
+                .toList();
+        List<String> oficiosRegistrados = costoManoObraRepository.findDistinctOficios();
+        return combinarNombresCatalogo(oficiosPersistidos, oficiosRegistrados);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CostoCatalogoResponse> obtenerOficiosManoObraPersistidos(Long proyectoId) {
+        validarProyectoExiste(proyectoId);
+        return costoManoObraOficioRepository.findAllByOrderByNombreAsc().stream()
+                .map(this::toCatalogoResponse)
+                .toList();
+    }
+
+    public CostoCatalogoResponse registrarOficioManoObra(Long proyectoId, CostoCatalogoRequest request) {
+        Proyecto proyecto = obtenerProyecto(proyectoId);
+        String nombre = normalizarNombreCatalogo(request.getNombre());
+
+        CostoManoObraOficio oficio = costoManoObraOficioRepository.findByNombreIgnoreCase(nombre)
+                .orElseGet(() -> costoManoObraOficioRepository.save(CostoManoObraOficio.builder()
+                        .nombre(nombre)
+                        .build()));
+
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
+        return toCatalogoResponse(oficio);
+    }
+
+    public CostoCatalogoResponse actualizarOficioManoObra(Long proyectoId, Long oficioId, CostoCatalogoRequest request) {
+        obtenerProyecto(proyectoId);
+        CostoManoObraOficio oficio = costoManoObraOficioRepository.findById(oficioId)
+                .orElseThrow(() -> new EntityNotFoundException("CostoManoObraOficio", oficioId));
+        String nombreNuevo = normalizarNombreCatalogo(request.getNombre());
+
+        costoManoObraOficioRepository.findByNombreIgnoreCase(nombreNuevo)
+                .filter(existente -> !Objects.equals(existente.getId(), oficioId))
+                .ifPresent(existente -> {
+                    throw new BadRequestException("Ya existe un oficio con ese nombre en el sistema");
+                });
+
+        String nombreAnterior = oficio.getNombre();
+        oficio.setNombre(nombreNuevo);
+        oficio = costoManoObraOficioRepository.save(oficio);
+        actualizarOficiosRelacionados(proyectoId, nombreAnterior, nombreNuevo);
+        return toCatalogoResponse(oficio);
+    }
+
+    public void eliminarOficioManoObra(Long proyectoId, Long oficioId) {
+        obtenerProyecto(proyectoId);
+        CostoManoObraOficio oficio = costoManoObraOficioRepository.findById(oficioId)
+                .orElseThrow(() -> new EntityNotFoundException("CostoManoObraOficio", oficioId));
+        if (!costoManoObraRepository.findByFuncionIgnoreCase(oficio.getNombre()).isEmpty()) {
+            throw new BadRequestException("No se puede eliminar el oficio porque esta en uso");
+        }
+        costoManoObraOficioRepository.delete(oficio);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
+    }
+
     /**
      * Registra un nuevo costo de mano de obra.
      */
@@ -114,6 +255,7 @@ public class CostoService {
         CostoManoObra manoObra = CostoMapper.toManoObraEntity(request, proyecto);
         manoObra = costoManoObraRepository.save(manoObra);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toManoObraResponse(manoObra);
     }
 
@@ -129,6 +271,7 @@ public class CostoService {
 
         manoObras = costoManoObraRepository.saveAll(manoObras);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toManoObraResponseList(manoObras);
     }
 
@@ -145,6 +288,7 @@ public class CostoService {
         CostoMapper.updateManoObraEntity(manoObra, request);
         manoObra = costoManoObraRepository.save(manoObra);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(manoObra.getProyecto());
         return CostoMapper.toManoObraResponse(manoObra);
     }
 
@@ -158,6 +302,7 @@ public class CostoService {
             throw new EntityNotFoundException("CostoManoObra", id);
         }
         costoManoObraRepository.delete(manoObra);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
     // ==================== CostoAdicional ====================
@@ -184,12 +329,7 @@ public class CostoService {
                 .map(CostoAdicionalCategoria::getNombre)
                 .toList();
 
-        return java.util.stream.Stream.concat(categoriasPersistidas.stream(), categoriasItems.stream())
-                .filter(nombre -> nombre != null && !nombre.isBlank())
-                .map(String::trim)
-                .distinct()
-                .sorted(String::compareToIgnoreCase)
-                .toList();
+        return combinarNombresCatalogo(categoriasPersistidas, categoriasItems);
     }
 
     @Transactional(readOnly = true)
@@ -214,6 +354,7 @@ public class CostoService {
                         .nombre(nombre)
                         .build()));
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoAdicionalCategoriaResponse.builder()
                 .id(categoria.getId())
                 .nombre(categoria.getNombre())
@@ -230,6 +371,7 @@ public class CostoService {
         }
 
         costoAdicionalCategoriaRepository.delete(categoria);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
     /**
@@ -241,6 +383,7 @@ public class CostoService {
         CostoAdicional adicional = CostoMapper.toAdicionalEntity(request, proyecto);
         adicional = costoAdicionalRepository.save(adicional);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toAdicionalResponse(adicional);
     }
 
@@ -256,6 +399,7 @@ public class CostoService {
 
         adicionales = costoAdicionalRepository.saveAll(adicionales);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
         return CostoMapper.toAdicionalResponseList(adicionales);
     }
 
@@ -272,6 +416,7 @@ public class CostoService {
         CostoMapper.updateAdicionalEntity(adicional, request);
         adicional = costoAdicionalRepository.save(adicional);
 
+        proyectoLifecycleService.marcarProyectoComoModificado(adicional.getProyecto());
         return CostoMapper.toAdicionalResponse(adicional);
     }
 
@@ -285,6 +430,7 @@ public class CostoService {
             throw new EntityNotFoundException("CostoAdicional", id);
         }
         costoAdicionalRepository.delete(adicional);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
     // ==================== Resumen ====================
@@ -297,17 +443,14 @@ public class CostoService {
     public ResumenCostoResponse obtenerResumen(Long proyectoId) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
-        // Sumar costos con queries directas
         BigDecimal totalMateriales = costoMaterialRepository.sumCostoTotalByProyectoId(proyectoId);
         BigDecimal totalManoObra = costoManoObraRepository.sumCostoTotalByProyectoId(proyectoId);
         BigDecimal totalAdicionales = costoAdicionalRepository.sumCostoTotalByProyectoId(proyectoId);
 
-        // Contar items
         long cantidadMateriales = costoMaterialRepository.countByProyectoId(proyectoId);
         long cantidadManoObra = costoManoObraRepository.countByProyectoId(proyectoId);
         long cantidadAdicionales = costoAdicionalRepository.countByProyectoId(proyectoId);
 
-        // Calcular totales
         BigDecimal costoTotal = totalMateriales.add(totalManoObra).add(totalAdicionales);
         BigDecimal presupuesto = proyecto.getCosto();
         BigDecimal diferencia = presupuesto.subtract(costoTotal);
@@ -338,5 +481,121 @@ public class CostoService {
     private Proyecto obtenerProyecto(Long proyectoId) {
         return proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));
+    }
+
+    private CostoCatalogoResponse toCatalogoResponse(CostoMaterialTipo tipo) {
+        return CostoCatalogoResponse.builder()
+                .id(tipo.getId())
+                .nombre(tipo.getNombre())
+                .build();
+    }
+
+    private CostoCatalogoResponse toCatalogoResponse(CostoManoObraOficio oficio) {
+        return CostoCatalogoResponse.builder()
+                .id(oficio.getId())
+                .nombre(oficio.getNombre())
+                .build();
+    }
+
+    private void actualizarTiposMaterialRelacionados(Long proyectoId, CostoMaterialTipo tipoActualizado, String nombreAnterior, String nombreNuevo) {
+        if (nombreAnterior == null || Objects.equals(nombreAnterior, nombreNuevo)) {
+            proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
+            return;
+        }
+
+        java.util.LinkedHashMap<Long, CostoMaterial> materiales = new java.util.LinkedHashMap<>();
+        for (CostoMaterial material : costoMaterialRepository.findByTipoIgnoreCase(nombreAnterior)) {
+            materiales.put(material.getId(), material);
+        }
+
+        for (CostoMaterial material : costoMaterialRepository.findByTipoMaterialId(tipoActualizado.getId())) {
+            materiales.put(material.getId(), material);
+        }
+
+        java.util.LinkedHashSet<Long> proyectosAfectados = new java.util.LinkedHashSet<>();
+        for (CostoMaterial material : materiales.values()) {
+            material.setTipo(nombreNuevo);
+            material.setTipoMaterial(tipoActualizado);
+            if (material.getProyecto() != null && material.getProyecto().getId() != null) {
+                proyectosAfectados.add(material.getProyecto().getId());
+            }
+        }
+        if (!materiales.isEmpty()) {
+            costoMaterialRepository.saveAll(materiales.values());
+        }
+
+        marcarProyectosComoModificados(proyectoId, proyectosAfectados);
+    }
+
+    private void actualizarOficiosRelacionados(Long proyectoId, String nombreAnterior, String nombreNuevo) {
+        if (nombreAnterior == null || Objects.equals(nombreAnterior, nombreNuevo)) {
+            proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
+            return;
+        }
+
+        List<CostoManoObra> manoObras = costoManoObraRepository.findByFuncionIgnoreCase(nombreAnterior);
+        java.util.LinkedHashSet<Long> proyectosAfectados = new java.util.LinkedHashSet<>();
+        for (CostoManoObra manoObra : manoObras) {
+            manoObra.setFuncion(nombreNuevo);
+            if (manoObra.getProyecto() != null && manoObra.getProyecto().getId() != null) {
+                proyectosAfectados.add(manoObra.getProyecto().getId());
+            }
+        }
+        if (!manoObras.isEmpty()) {
+            costoManoObraRepository.saveAll(manoObras);
+        }
+
+        marcarProyectosComoModificados(proyectoId, proyectosAfectados);
+    }
+
+    private String normalizarNombreCatalogo(String nombre) {
+        return nombre == null ? "" : nombre.trim();
+    }
+
+    private void asignarTipoMaterial(CostoMaterial material, Proyecto proyecto, CostoMaterialRequest request) {
+        CostoMaterialTipo tipoMaterial = resolverTipoMaterial(proyecto, request);
+        material.setTipoMaterial(tipoMaterial);
+        String nombreTipo = tipoMaterial != null ? tipoMaterial.getNombre() : normalizarNombreCatalogo(request.getTipo());
+        material.setTipo(nombreTipo.isBlank() ? null : nombreTipo);
+    }
+
+    private CostoMaterialTipo resolverTipoMaterial(Proyecto proyecto, CostoMaterialRequest request) {
+        if (request == null || proyecto == null || proyecto.getId() == null) {
+            return null;
+        }
+
+        if (request.getTipoId() != null) {
+            return costoMaterialTipoRepository.findById(request.getTipoId())
+                    .orElseThrow(() -> new EntityNotFoundException("CostoMaterialTipo", request.getTipoId()));
+        }
+
+        String nombreTipo = normalizarNombreCatalogo(request.getTipo());
+        if (nombreTipo.isBlank()) {
+            return null;
+        }
+
+        return costoMaterialTipoRepository.findByNombreIgnoreCase(nombreTipo)
+                .orElseGet(() -> costoMaterialTipoRepository.save(CostoMaterialTipo.builder()
+                        .nombre(nombreTipo)
+                        .build()));
+    }
+
+    private void marcarProyectosComoModificados(Long proyectoIdOrigen, java.util.LinkedHashSet<Long> proyectoIds) {
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoIdOrigen);
+        for (Long proyectoId : proyectoIds) {
+            if (proyectoId != null && !Objects.equals(proyectoId, proyectoIdOrigen)) {
+                proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
+            }
+        }
+    }
+
+    private List<String> combinarNombresCatalogo(List<String> persistidos, List<String> registrados) {
+        return Stream.concat(persistidos.stream(), registrados.stream())
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(nombre -> !nombre.isBlank())
+                .distinct()
+                .sorted(String::compareToIgnoreCase)
+                .toList();
     }
 }

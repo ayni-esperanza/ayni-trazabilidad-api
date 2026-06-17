@@ -24,6 +24,10 @@ public class CostoMaterialRequest {
 
     private String nroComprobante;
 
+    private Long tipoId;
+
+    private String tipo;
+
     @NotBlank(message = "El producto es obligatorio")
     private String producto;
 

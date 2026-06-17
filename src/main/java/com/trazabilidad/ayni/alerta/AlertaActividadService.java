@@ -3,6 +3,10 @@ package com.trazabilidad.ayni.alerta;
 import com.trazabilidad.ayni.alerta.dto.AlertaActividadResponse;
 import com.trazabilidad.ayni.proyecto.ActividadProyecto;
 import com.trazabilidad.ayni.proyecto.ActividadProyectoRepository;
+import com.trazabilidad.ayni.proyecto.Proyecto;
+import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
+import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,17 +23,32 @@ import java.util.List;
 public class AlertaActividadService {
 
     private final ActividadProyectoRepository actividadProyectoRepository;
+    private final ProyectoRepository proyectoRepository;
+    private final ProyectoLifecycleService proyectoLifecycleService;
 
     public List<AlertaActividadResponse> listarAlertas() {
-        return actividadProyectoRepository.findAll().stream()
-                .map(this::mapAlerta)
+        proyectoLifecycleService.archivarProyectosInactivos();
+
+        List<AlertaActividadResponse> alertasActividad = actividadProyectoRepository.findAll().stream()
+                .map(this::mapAlertaActividad)
                 .filter(java.util.Objects::nonNull)
+                .toList();
+
+        List<AlertaActividadResponse> alertasArchivado = proyectoRepository.findAll().stream()
+                .map(this::mapAlertaArchivado)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return java.util.stream.Stream.concat(alertasArchivado.stream(), alertasActividad.stream())
                 .sorted(Comparator.comparingLong(AlertaActividadResponse::getHorasSinCambio).reversed())
                 .toList();
     }
 
-    private AlertaActividadResponse mapAlerta(ActividadProyecto actividad) {
+    private AlertaActividadResponse mapAlertaActividad(ActividadProyecto actividad) {
         if (actividad == null || !"tarea".equalsIgnoreCase(actividad.getTipo())) {
+            return null;
+        }
+        if (actividad.getProyecto() != null && actividad.getProyecto().getEstado() == EstadoProyecto.ARCHIVADO) {
             return null;
         }
 
@@ -63,12 +82,36 @@ public class AlertaActividadService {
 
         return AlertaActividadResponse.builder()
                 .proyectoId(actividad.getProyecto() != null ? actividad.getProyecto().getId() : null)
+                .proyectoNombre(actividad.getProyecto() != null ? actividad.getProyecto().getNombreProyecto() : null)
                 .nodoId(actividad.getId())
                 .nombreActividad(actividad.getNombre() != null ? actividad.getNombre() : "Actividad sin nombre")
                 .estado(estado)
                 .nivel(nivel)
                 .horasSinCambio(horas)
                 .mensaje(mensaje)
+                .build();
+    }
+
+    private AlertaActividadResponse mapAlertaArchivado(Proyecto proyecto) {
+        if (proyecto == null || proyecto.getEstado() != EstadoProyecto.ARCHIVADO) {
+            return null;
+        }
+
+        long horasSinCambio = Math.max(
+                Duration.between(
+                        proyecto.getFechaActualizacion() != null ? proyecto.getFechaActualizacion() : LocalDateTime.now(),
+                        LocalDateTime.now()).toHours(),
+                ProyectoLifecycleService.DIAS_INACTIVIDAD_ARCHIVADO * 24);
+
+        return AlertaActividadResponse.builder()
+                .proyectoId(proyecto.getId())
+                .proyectoNombre(proyecto.getNombreProyecto())
+                .nodoId(0L)
+                .nombreActividad("Proyecto archivado automaticamente")
+                .estado(proyecto.getEstado().getDisplayName())
+                .nivel("media")
+                .horasSinCambio(horasSinCambio)
+                .mensaje("Atencion: proyecto archivado automaticamente por mas de 30 dias sin cambios")
                 .build();
     }
 

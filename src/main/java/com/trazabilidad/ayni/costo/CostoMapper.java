@@ -25,10 +25,15 @@ public class CostoMapper {
             return null;
         }
 
+        CostoMaterialTipo tipoMaterial = entity.getTipoMaterial();
+        String nombreTipo = tipoMaterial != null ? tipoMaterial.getNombre() : entity.getTipo();
+
         return CostoMaterialResponse.builder()
                 .id(entity.getId())
                 .fecha(entity.getFecha())
                 .nroComprobante(entity.getNroComprobante())
+                .tipoId(tipoMaterial != null ? tipoMaterial.getId() : null)
+                .tipo(nombreTipo)
                 .producto(entity.getMaterial())
                 .unidad(entity.getUnidad())
                 .cantidad(entity.getCantidad())
@@ -65,6 +70,7 @@ public class CostoMapper {
         return CostoMaterial.builder()
                 .fecha(request.getFecha())
                 .nroComprobante(request.getNroComprobante())
+                .tipo(request.getTipo())
                 .material(request.getProducto())
                 .unidad(request.getUnidad())
                 .cantidad(request.getCantidad())
@@ -85,6 +91,7 @@ public class CostoMapper {
 
         entity.setFecha(request.getFecha());
         entity.setNroComprobante(request.getNroComprobante());
+        entity.setTipo(request.getTipo());
         entity.setMaterial(request.getProducto());
         entity.setUnidad(request.getUnidad());
         entity.setCantidad(request.getCantidad());
@@ -103,10 +110,13 @@ public class CostoMapper {
             return null;
         }
 
+        String oficio = entity.getFuncion();
+
         return CostoManoObraResponse.builder()
                 .id(entity.getId())
                 .trabajador(entity.getTrabajador())
-                .cargo(entity.getFuncion())
+                .oficio(oficio)
+                .cargo(oficio)
                 .diasTrabajando(entity.getHorasTrabajadas())
                 .costoPorDia(entity.getCostoHora())
                 .costoTotal(entity.getCostoTotal())
@@ -139,7 +149,7 @@ public class CostoMapper {
 
         return CostoManoObra.builder()
                 .trabajador(request.getTrabajador())
-                .funcion(request.getCargo())
+                .funcion(request.resolveOficio())
                 .horasTrabajadas(request.getDiasTrabajando())
                 .costoHora(request.getCostoPorDia())
                 .dependenciaActividadId(request.getDependenciaActividadId())
@@ -156,7 +166,7 @@ public class CostoMapper {
         }
 
         entity.setTrabajador(request.getTrabajador());
-        entity.setFuncion(request.getCargo());
+        entity.setFuncion(request.resolveOficio());
         entity.setHorasTrabajadas(request.getDiasTrabajando());
         entity.setCostoHora(request.getCostoPorDia());
         entity.setDependenciaActividadId(request.getDependenciaActividadId());

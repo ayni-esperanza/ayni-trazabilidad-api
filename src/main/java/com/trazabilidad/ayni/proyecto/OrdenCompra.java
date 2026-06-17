@@ -1,5 +1,6 @@
 package com.trazabilidad.ayni.proyecto;
 
+import com.trazabilidad.ayni.shared.util.Auditable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrdenCompra {
+public class OrdenCompra extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +38,11 @@ public class OrdenCompra {
 
     @Column(name = "tipo", length = 100)
     private String tipo;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_actividad", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'DESARROLLO' NOT NULL")
+    private TipoActividadProyecto tipoActividad = TipoActividadProyecto.DESARROLLO;
 
     @Column(name = "numero_licitacion", length = 100)
     private String numeroLicitacion;

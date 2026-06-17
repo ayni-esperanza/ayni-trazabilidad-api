@@ -3,11 +3,30 @@ package com.trazabilidad.ayni.usuario;
 import com.trazabilidad.ayni.permiso.Permiso;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.shared.util.Auditable;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -48,7 +67,7 @@ public class Usuario extends Auditable {
     private String apellido;
 
     @NotBlank(message = "El email es obligatorio")
-    @Email(message = "El email debe ser válido")
+    @Email(message = "El email debe ser valido")
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
@@ -58,26 +77,22 @@ public class Usuario extends Auditable {
     private String username;
 
     /**
-     * Password encriptado con BCrypt
+     * Password encriptado con BCrypt.
      */
-    @NotBlank(message = "La contraseña es obligatoria")
+    @NotBlank(message = "La contrasena es obligatoria")
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Size(max = 20, message = "El teléfono no puede exceder 20 caracteres")
+    @Size(max = 20, message = "El telefono no puede exceder 20 caracteres")
     @Column(length = 20)
     private String telefono;
 
-    @Size(max = 100, message = "El cargo no puede exceder 100 caracteres")
-    @Column(length = 100)
-    private String cargo;
-
-    @Size(max = 100, message = "El área no puede exceder 100 caracteres")
+    @Size(max = 100, message = "El area no puede exceder 100 caracteres")
     @Column(length = 100)
     private String area;
 
     /**
-     * Foto en formato Base64 (o URL)
+     * Foto en formato Base64 (o URL).
      */
     @Lob
     @Column(columnDefinition = "TEXT")
@@ -92,19 +107,16 @@ public class Usuario extends Auditable {
     private Boolean activo = true;
 
     /**
-     * Relación con Roles - Un usuario puede tener múltiples roles
-     * EAGER para cargar roles inmediatamente (necesario para autorización)
+     * Relacion con roles. Se cargan eager para autorizacion.
      */
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "rol_id", referencedColumnName = "id"))
+    @JoinTable(
+            name = "usuario_roles",
+            joinColumns = @JoinColumn(name = "usuario_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id", referencedColumnName = "id"))
     @Builder.Default
     private Set<Rol> roles = new HashSet<>();
 
-    // ==================== MÉTODOS DE CONVENIENCIA ====================
-
-    /**
-     * Constructor para crear usuario básico
-     */
     public Usuario(String nombre, String apellido, String email, String username, String password) {
         this.nombre = nombre;
         this.apellido = apellido;
@@ -116,17 +128,10 @@ public class Usuario extends Auditable {
         this.roles = new HashSet<>();
     }
 
-    /**
-     * Obtiene el nombre completo del usuario
-     */
     public String getNombreCompleto() {
         return this.nombre + " " + this.apellido;
     }
 
-    /**
-     * Agrega un rol al usuario
-     * Mantiene la coherencia bidireccional
-     */
     public void agregarRol(Rol rol) {
         if (this.roles == null) {
             this.roles = new HashSet<>();
@@ -135,19 +140,11 @@ public class Usuario extends Auditable {
         rol.getUsuarios().add(this);
     }
 
-    /**
-     * Remueve un rol del usuario
-     * Mantiene la coherencia bidireccional
-     */
     public void removerRol(Rol rol) {
         this.roles.remove(rol);
         rol.getUsuarios().remove(this);
     }
 
-    /**
-     * Obtiene todos los permisos del usuario (de todos sus roles)
-     * Útil para autorización
-     */
     public Set<Permiso> getPermisos() {
         if (this.roles == null || this.roles.isEmpty()) {
             return new HashSet<>();
@@ -157,9 +154,6 @@ public class Usuario extends Auditable {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * Verifica si el usuario tiene un rol específico
-     */
     public boolean tieneRol(String nombreRol) {
         if (this.roles == null) {
             return false;
@@ -168,22 +162,14 @@ public class Usuario extends Auditable {
                 .anyMatch(rol -> rol.getNombre().equalsIgnoreCase(nombreRol));
     }
 
-    /**
-     * Verifica si el usuario tiene un permiso específico
-     */
     public boolean tienePermiso(String nombrePermiso) {
         return getPermisos().stream()
                 .anyMatch(permiso -> permiso.getNombre().equalsIgnoreCase(nombrePermiso));
     }
 
-    /**
-     * Verifica si el usuario está activo
-     */
     public boolean isActivo() {
         return this.activo != null && this.activo;
     }
-
-    // ==================== LIFECYCLE CALLBACKS ====================
 
     @PrePersist
     protected void onCreate() {

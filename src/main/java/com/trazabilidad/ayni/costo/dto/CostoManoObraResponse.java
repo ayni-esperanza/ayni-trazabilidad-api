@@ -19,6 +19,7 @@ public class CostoManoObraResponse {
 
     private Long id;
     private String trabajador;
+    private String oficio;
     private String cargo;
     private BigDecimal diasTrabajando;
     private BigDecimal costoPorDia;

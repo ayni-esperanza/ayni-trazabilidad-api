@@ -15,8 +15,9 @@ import java.util.Set;
 @Getter
 public enum EstadoProyecto {
 
-    PENDIENTE("Pendiente", Set.of("EN_PROCESO", "CANCELADO")),
-    EN_PROCESO("En Proceso", Set.of("COMPLETADO", "CANCELADO")),
+    PENDIENTE("Pendiente", Set.of("EN_PROCESO", "CANCELADO", "ARCHIVADO")),
+    EN_PROCESO("En Proceso", Set.of("COMPLETADO", "CANCELADO", "ARCHIVADO")),
+    ARCHIVADO("Archivado", Set.of("EN_PROCESO", "COMPLETADO", "CANCELADO")),
     COMPLETADO("Completado", Set.of("FINALIZADO")),
     CANCELADO("Cancelado", Set.of()),
     FINALIZADO("Finalizado", Set.of());

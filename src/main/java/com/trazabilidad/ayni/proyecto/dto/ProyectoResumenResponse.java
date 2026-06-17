@@ -26,6 +26,8 @@ public class ProyectoResumenResponse {
     private String estado;
     private Long responsableId;
     private String responsableNombre;
+    private Long responsableAnteriorId;
+    private String responsableAnteriorNombre;
     private LocalDate fechaInicio;
     private LocalDate fechaFinalizacion;
 }

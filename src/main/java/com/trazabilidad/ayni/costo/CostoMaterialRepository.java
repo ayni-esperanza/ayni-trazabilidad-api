@@ -19,6 +19,50 @@ public interface CostoMaterialRepository extends JpaRepository<CostoMaterial, Lo
      */
     List<CostoMaterial> findByProyectoId(Long proyectoId);
 
+    List<CostoMaterial> findByProyectoIdAndTipoIgnoreCase(Long proyectoId, String tipo);
+
+    List<CostoMaterial> findByProyectoIdAndTipoMaterialId(Long proyectoId, Long tipoMaterialId);
+
+    List<CostoMaterial> findByTipoIgnoreCase(String tipo);
+
+    List<CostoMaterial> findByTipoMaterialId(Long tipoMaterialId);
+
+    @Query("""
+            SELECT DISTINCT c.tipo
+            FROM CostoMaterial c
+            WHERE c.proyecto.id = :proyectoId
+              AND c.tipo IS NOT NULL
+              AND TRIM(c.tipo) <> ''
+            ORDER BY c.tipo
+            """)
+    List<String> findDistinctTiposByProyectoId(@Param("proyectoId") Long proyectoId);
+
+    @Query("""
+            SELECT DISTINCT t.nombre
+            FROM CostoMaterial c
+            JOIN c.tipoMaterial t
+            WHERE c.proyecto.id = :proyectoId
+            ORDER BY t.nombre
+            """)
+    List<String> findDistinctTiposRelacionadosByProyectoId(@Param("proyectoId") Long proyectoId);
+
+    @Query("""
+            SELECT DISTINCT c.tipo
+            FROM CostoMaterial c
+            WHERE c.tipo IS NOT NULL
+              AND TRIM(c.tipo) <> ''
+            ORDER BY c.tipo
+            """)
+    List<String> findDistinctTipos();
+
+    @Query("""
+            SELECT DISTINCT t.nombre
+            FROM CostoMaterial c
+            JOIN c.tipoMaterial t
+            ORDER BY t.nombre
+            """)
+    List<String> findDistinctTiposRelacionados();
+
     /**
      * Elimina todos los costos de material de un proyecto.
      */

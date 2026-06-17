@@ -56,6 +56,44 @@ public class CostoController {
         return ResponseEntity.ok(materiales);
     }
 
+    @GetMapping("/materiales/tipos")
+    @Operation(summary = "Listar tipos de materiales", description = "Obtiene los tipos de material disponibles del proyecto")
+    public ResponseEntity<List<String>> obtenerTiposMaterial(@PathVariable Long proyectoId) {
+        return ResponseEntity.ok(costoService.obtenerTiposMaterial(proyectoId));
+    }
+
+    @GetMapping("/materiales/tipos-registro")
+    @Operation(summary = "Listar tipos de materiales persistidos", description = "Obtiene los tipos registrados aunque no tengan items")
+    public ResponseEntity<List<CostoCatalogoResponse>> obtenerTiposMaterialPersistidos(@PathVariable Long proyectoId) {
+        return ResponseEntity.ok(costoService.obtenerTiposMaterialPersistidos(proyectoId));
+    }
+
+    @PostMapping("/materiales/tipos-registro")
+    @Operation(summary = "Registrar tipo de material", description = "Crea un tipo de material para el proyecto")
+    public ResponseEntity<CostoCatalogoResponse> registrarTipoMaterial(
+            @PathVariable Long proyectoId,
+            @Valid @RequestBody CostoCatalogoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(costoService.registrarTipoMaterial(proyectoId, request));
+    }
+
+    @PutMapping("/materiales/tipos-registro/{tipoId}")
+    @Operation(summary = "Actualizar tipo de material", description = "Renombra un tipo de material y actualiza sus items relacionados")
+    public ResponseEntity<CostoCatalogoResponse> actualizarTipoMaterial(
+            @PathVariable Long proyectoId,
+            @PathVariable Long tipoId,
+            @Valid @RequestBody CostoCatalogoRequest request) {
+        return ResponseEntity.ok(costoService.actualizarTipoMaterial(proyectoId, tipoId, request));
+    }
+
+    @DeleteMapping("/materiales/tipos-registro/{tipoId}")
+    @Operation(summary = "Eliminar tipo de material", description = "Elimina un tipo de material del proyecto")
+    public ResponseEntity<Void> eliminarTipoMaterial(
+            @PathVariable Long proyectoId,
+            @PathVariable Long tipoId) {
+        costoService.eliminarTipoMaterial(proyectoId, tipoId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/materiales")
     @Operation(summary = "Registrar material", description = "Registra un nuevo costo de material en el proyecto")
     @ApiResponses({
@@ -124,6 +162,44 @@ public class CostoController {
             @Parameter(description = "ID del proyecto") @PathVariable Long proyectoId) {
         List<CostoManoObraResponse> manoObra = costoService.obtenerManoObra(proyectoId);
         return ResponseEntity.ok(manoObra);
+    }
+
+    @GetMapping("/mano-obra/oficios")
+    @Operation(summary = "Listar oficios", description = "Obtiene los oficios disponibles de mano de obra del proyecto")
+    public ResponseEntity<List<String>> obtenerOficiosManoObra(@PathVariable Long proyectoId) {
+        return ResponseEntity.ok(costoService.obtenerOficiosManoObra(proyectoId));
+    }
+
+    @GetMapping("/mano-obra/oficios-registro")
+    @Operation(summary = "Listar oficios persistidos", description = "Obtiene los oficios registrados aunque no tengan items")
+    public ResponseEntity<List<CostoCatalogoResponse>> obtenerOficiosManoObraPersistidos(@PathVariable Long proyectoId) {
+        return ResponseEntity.ok(costoService.obtenerOficiosManoObraPersistidos(proyectoId));
+    }
+
+    @PostMapping("/mano-obra/oficios-registro")
+    @Operation(summary = "Registrar oficio", description = "Crea un oficio para mano de obra en el proyecto")
+    public ResponseEntity<CostoCatalogoResponse> registrarOficioManoObra(
+            @PathVariable Long proyectoId,
+            @Valid @RequestBody CostoCatalogoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(costoService.registrarOficioManoObra(proyectoId, request));
+    }
+
+    @PutMapping("/mano-obra/oficios-registro/{oficioId}")
+    @Operation(summary = "Actualizar oficio", description = "Renombra un oficio y actualiza sus items relacionados")
+    public ResponseEntity<CostoCatalogoResponse> actualizarOficioManoObra(
+            @PathVariable Long proyectoId,
+            @PathVariable Long oficioId,
+            @Valid @RequestBody CostoCatalogoRequest request) {
+        return ResponseEntity.ok(costoService.actualizarOficioManoObra(proyectoId, oficioId, request));
+    }
+
+    @DeleteMapping("/mano-obra/oficios-registro/{oficioId}")
+    @Operation(summary = "Eliminar oficio", description = "Elimina un oficio del proyecto")
+    public ResponseEntity<Void> eliminarOficioManoObra(
+            @PathVariable Long proyectoId,
+            @PathVariable Long oficioId) {
+        costoService.eliminarOficioManoObra(proyectoId, oficioId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mano-obra")
@@ -209,14 +285,14 @@ public class CostoController {
     }
 
     @GetMapping("/adicionales/categorias-registro")
-    @Operation(summary = "Listar categorías persistidas", description = "Obtiene categorías de costos adicionales aunque no tengan ítems")
+    @Operation(summary = "Listar categorías persistidas", description = "Obtiene categorías de costos adicionales aunque no tengan items")
     public ResponseEntity<List<CostoAdicionalCategoriaResponse>> obtenerCategoriasPersistidas(
             @PathVariable Long proyectoId) {
         return ResponseEntity.ok(costoService.obtenerCategoriasPersistidas(proyectoId));
     }
 
     @PostMapping("/adicionales/categorias-registro")
-    @Operation(summary = "Registrar categoría adicional", description = "Crea una categoría de costos adicionales sin requerir ítems")
+    @Operation(summary = "Registrar categoría adicional", description = "Crea una categoría de costos adicionales sin requerir items")
     public ResponseEntity<CostoAdicionalCategoriaResponse> registrarCategoria(
             @PathVariable Long proyectoId,
             @Valid @RequestBody CostoAdicionalCategoriaRequest request) {
@@ -224,7 +300,7 @@ public class CostoController {
     }
 
     @DeleteMapping("/adicionales/categorias-registro/{categoriaId}")
-    @Operation(summary = "Eliminar categoría adicional", description = "Elimina una categoría y sus ítems relacionados")
+    @Operation(summary = "Eliminar categoría adicional", description = "Elimina una categoría y sus items relacionados")
     public ResponseEntity<Void> eliminarCategoria(
             @PathVariable Long proyectoId,
             @PathVariable Long categoriaId) {

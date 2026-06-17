@@ -13,6 +13,8 @@ import com.trazabilidad.ayni.dashboard.dto.ProyectoIndicadorResponse;
 import com.trazabilidad.ayni.dashboard.dto.ResponsableIndicadorResponse;
 import com.trazabilidad.ayni.proyecto.ActividadProyecto;
 import com.trazabilidad.ayni.proyecto.Proyecto;
+import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
+import com.trazabilidad.ayni.proyecto.ProyectoMapper;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
@@ -54,8 +56,10 @@ public class DashboardService {
     private final CostoManoObraRepository costoManoObraRepository;
     private final CostoAdicionalRepository costoAdicionalRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ProyectoLifecycleService proyectoLifecycleService;
 
     public DashboardResponse obtenerResumenGeneral() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         return DashboardResponse.builder()
                 .totalSolicitudes(solicitudRepository.count())
                 .totalProyectos(proyectoRepository.count())
@@ -119,6 +123,7 @@ public class DashboardService {
     }
 
     public List<ResponsableIndicadorResponse> obtenerIndicadoresResponsables() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         List<Usuario> usuarios = usuarioRepository.findAll();
         List<Proyecto> proyectos = proyectoRepository.findAll();
         long totalProyectosGlobal = proyectos.size();
@@ -151,7 +156,7 @@ public class DashboardService {
             list.add(ResponsableIndicadorResponse.builder()
                     .id(u.getId())
                     .nombre(u.getNombreCompleto())
-                    .cargo(u.getCargo())
+                    .cargo("")
                     .antiguedad(antiguedad)
                     .participacionProyectos((int) participacionProyectos)
                     .tareasRealizadas(0L)
@@ -167,6 +172,7 @@ public class DashboardService {
     }
 
     public List<ProyectoIndicadorResponse> obtenerIndicadoresProyectos() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         List<Proyecto> proyectos = proyectoRepository.findAll();
         List<ProyectoIndicadorResponse> list = new ArrayList<>();
 
@@ -217,7 +223,8 @@ public class DashboardService {
                     .descripcion(p.getDescripcion())
                     .ubicacion(p.getUbicacion())
                     .areas(p.getAreas())
-                    .fechaRegistro(p.getFechaRegistro())
+                    .fechaRegistro(ProyectoMapper.resolveFechaRegistro(p))
+                    .fechaActualizacion(ProyectoMapper.resolveFechaActualizacion(p))
                     .build());
         }
 
@@ -225,14 +232,17 @@ public class DashboardService {
     }
 
     public List<DashboardSerieResponse> obtenerGraficoActivosPorMes() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         return construirSerieMensualPorProyecto(proyectoRepository.findAll(), ESTADOS_ACTIVOS, false);
     }
 
     public List<DashboardSerieResponse> obtenerGraficoFinalizadosPorMes() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         return construirSerieMensualPorProyecto(proyectoRepository.findAll(), ESTADOS_FINALIZADOS, true);
     }
 
     public List<DashboardSerieResponse> obtenerGraficoGastosPorMes() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         Map<Month, BigDecimal> acumulado = inicializarSerieMensual();
 
         for (Proyecto proyecto : proyectoRepository.findAll()) {
@@ -261,6 +271,7 @@ public class DashboardService {
     }
 
     public List<DashboardCostoDetalleResponse> obtenerGastosProyectos() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         List<DashboardCostoDetalleResponse> gastos = new ArrayList<>();
 
         for (Proyecto proyecto : proyectoRepository.findAll()) {
@@ -311,6 +322,7 @@ public class DashboardService {
     }
 
     public List<DashboardActividadEncargadoResponse> obtenerTareasEncargados() {
+        proyectoLifecycleService.archivarProyectosInactivos();
         List<DashboardActividadEncargadoResponse> actividades = new ArrayList<>();
 
         for (Proyecto proyecto : proyectoRepository.findAll()) {
@@ -354,7 +366,7 @@ public class DashboardService {
 
             LocalDate fecha = usarFechaFinalizacion ? proyecto.getFechaFinalizacion() : proyecto.getFechaInicio();
             if (fecha == null) {
-                fecha = proyecto.getFechaRegistro();
+                fecha = ProyectoMapper.resolveFechaRegistro(proyecto);
             }
             if (fecha == null) {
                 continue;

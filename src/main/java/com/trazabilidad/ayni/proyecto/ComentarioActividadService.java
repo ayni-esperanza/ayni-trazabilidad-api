@@ -26,6 +26,7 @@ public class ComentarioActividadService {
 
     private final ProyectoRepository proyectoRepository;
     private final ComentarioActividadRepository comentarioActividadRepository;
+    private final ProyectoLifecycleService proyectoLifecycleService;
 
     @Transactional(readOnly = true)
     public List<ComentarioActividadResponse> listar(Long proyectoId) {
@@ -55,7 +56,9 @@ public class ComentarioActividadService {
                 .build();
 
         replaceAdjuntos(comentario, request.getAdjuntos());
-        return toResponse(comentarioActividadRepository.save(comentario));
+        ComentarioActividad saved = comentarioActividadRepository.save(comentario);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyecto);
+        return toResponse(saved);
     }
 
     public ComentarioActividadResponse actualizar(Long proyectoId, Long comentarioId, ComentarioActividadRequest request) {
@@ -74,13 +77,16 @@ public class ComentarioActividadService {
         comentario.setDescripcion(resolveDescripcion(request));
         replaceAdjuntos(comentario, request.getAdjuntos());
 
-        return toResponse(comentarioActividadRepository.save(comentario));
+        ComentarioActividad updated = comentarioActividadRepository.save(comentario);
+        proyectoLifecycleService.marcarProyectoComoModificado(comentario.getProyecto());
+        return toResponse(updated);
     }
 
     public void eliminar(Long proyectoId, Long comentarioId) {
         ComentarioActividad comentario = comentarioActividadRepository.findByIdAndProyectoId(comentarioId, proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("ComentarioActividad", comentarioId));
         comentarioActividadRepository.delete(comentario);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
     private void assertProyecto(Long proyectoId) {

@@ -41,6 +41,8 @@ public class ProyectoResponse {
 
     private Long responsableId;
     private String responsableNombre;
+    private Long responsableAnteriorId;
+    private String responsableAnteriorNombre;
 
     private FlujoProyectoResponse flujo;
 

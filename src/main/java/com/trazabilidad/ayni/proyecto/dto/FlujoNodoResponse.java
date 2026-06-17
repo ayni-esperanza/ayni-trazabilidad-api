@@ -21,6 +21,10 @@ public class FlujoNodoResponse {
     private String fechaCambioEstado;
     private Long responsableId;
     private String responsableNombre;
+    private Long creadorId;
+    private String creadorNombre;
+    private String fechaRegistro;
+    private String fechaActualizacion;
     private String fechaInicio;
     private String fechaFin;
     private String descripcion;

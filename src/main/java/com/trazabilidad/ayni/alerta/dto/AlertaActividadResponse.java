@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AlertaActividadResponse {
     private Long proyectoId;
+    private String proyectoNombre;
     private Long nodoId;
     private String nombreActividad;
     private String estado;

@@ -177,7 +177,6 @@ public class DataInitializer implements CommandLineRunner {
                     .email(base.email())
                     .username(base.username())
                     .password(passwordEncoder.encode("Cambio123*"))
-                    .cargo("Responsable de AYNI")
                     .activo(true)
                     .roles(new HashSet<>(Set.of(rolIngeniero)))
                     .build();

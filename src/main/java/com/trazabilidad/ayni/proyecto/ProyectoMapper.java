@@ -10,6 +10,8 @@ import com.trazabilidad.ayni.proyecto.dto.ProyectoResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.function.Function;
 
 /**
@@ -46,7 +48,7 @@ public class ProyectoMapper {
                 .costo(proyecto.getCosto())
                 .ordenesCompra(mapOrdenesCompra(proyecto.getOrdenesCompra(), publicUrlResolver))
                 .descripcion(proyecto.getDescripcion())
-                .fechaRegistro(proyecto.getFechaRegistro())
+                .fechaRegistro(resolveFechaRegistro(proyecto))
                 .fechaInicio(proyecto.getFechaInicio())
                 .fechaFinalizacion(proyecto.getFechaFinalizacion())
                 .estado(proyecto.getEstado().getDisplayName())
@@ -57,10 +59,12 @@ public class ProyectoMapper {
                         proyecto.getSolicitud() != null ? proyecto.getSolicitud().getNombreProyecto() : null)
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsableNombre() != null ? proyecto.getResponsableNombre() : proyecto.getResponsable().getNombreCompleto())
+                .responsableAnteriorId(proyecto.getResponsableAnteriorId())
+                .responsableAnteriorNombre(proyecto.getResponsableAnteriorNombre())
                 .flujo(mapFlujo(proyecto.getActividades(), publicUrlResolver))
                 .comentariosAdicionalesActividad(mapComentarios(proyecto.getComentariosAdicionalesActividad(), publicUrlResolver))
-                .fechaCreacion(proyecto.getFechaCreacion())
-                .fechaActualizacion(proyecto.getFechaActualizacion())
+                .fechaCreacion(resolveFechaCreacion(proyecto))
+                .fechaActualizacion(resolveFechaActualizacion(proyecto))
                 .build();
     }
 
@@ -83,6 +87,8 @@ public class ProyectoMapper {
                 .estado(proyecto.getEstado().getDisplayName())
                 .responsableId(proyecto.getResponsable().getId())
                 .responsableNombre(proyecto.getResponsableNombre() != null ? proyecto.getResponsableNombre() : proyecto.getResponsable().getNombreCompleto())
+                .responsableAnteriorId(proyecto.getResponsableAnteriorId())
+                .responsableAnteriorNombre(proyecto.getResponsableAnteriorNombre())
                 .fechaInicio(proyecto.getFechaInicio())
                 .fechaFinalizacion(proyecto.getFechaFinalizacion())
                 .build();
@@ -99,6 +105,39 @@ public class ProyectoMapper {
                 .toList();
     }
 
+    public static LocalDate resolveFechaRegistro(Proyecto proyecto) {
+        if (proyecto == null) {
+            return null;
+        }
+        if (proyecto.getSolicitud() != null && proyecto.getSolicitud().getFechaSolicitud() != null) {
+            return proyecto.getSolicitud().getFechaSolicitud();
+        }
+        if (proyecto.getFechaRegistro() != null) {
+            return proyecto.getFechaRegistro();
+        }
+        return proyecto.getFechaCreacion() != null ? proyecto.getFechaCreacion().toLocalDate() : null;
+    }
+
+    public static LocalDateTime resolveFechaCreacion(Proyecto proyecto) {
+        if (proyecto == null) {
+            return null;
+        }
+        if (proyecto.getSolicitud() != null && proyecto.getSolicitud().getFechaCreacion() != null) {
+            return proyecto.getSolicitud().getFechaCreacion();
+        }
+        return proyecto.getFechaCreacion();
+    }
+
+    public static LocalDateTime resolveFechaActualizacion(Proyecto proyecto) {
+        if (proyecto == null) {
+            return null;
+        }
+        if (proyecto.getSolicitud() != null && proyecto.getSolicitud().getFechaActualizacion() != null) {
+            return proyecto.getSolicitud().getFechaActualizacion();
+        }
+        return proyecto.getFechaActualizacion();
+    }
+
     private static List<OrdenCompraResponse> mapOrdenesCompra(List<OrdenCompra> ordenesCompra, Function<String, String> publicUrlResolver) {
         if (ordenesCompra == null) {
             return new ArrayList<>();
@@ -111,9 +150,12 @@ public class ProyectoMapper {
                         .numero(orden.getNumero())
                         .fecha(orden.getFecha())
                         .tipo(orden.getTipo())
+                        .tipoActividad(orden.getTipoActividad() != null ? orden.getTipoActividad().name() : null)
                         .numeroLicitacion(orden.getNumeroLicitacion())
                         .numeroSolicitud(orden.getNumeroSolicitud())
                         .total(orden.getTotal())
+                        .fechaCreacion(orden.getFechaCreacion())
+                        .fechaActualizacion(orden.getFechaActualizacion())
                         .adjuntos(orden.getAdjuntos() != null
                                 ? orden.getAdjuntos().stream().map(adjunto -> FlujoAdjuntoResponse.builder()
                                         .nombre(adjunto.getNombre())
@@ -146,6 +188,16 @@ public class ProyectoMapper {
                         .fechaCambioEstado(actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
                         .responsableId(actividad.getResponsable() != null ? actividad.getResponsable().getId() : null)
                         .responsableNombre(actividad.getResponsableNombre())
+                        .creadorId(actividad.getCreador() != null
+                                ? actividad.getCreador().getId()
+                                : actividad.getResponsable() != null ? actividad.getResponsable().getId() : null)
+                        .creadorNombre(actividad.getCreador() != null
+                                ? actividad.getCreador().getNombreCompleto()
+                                : actividad.getResponsable() != null ? actividad.getResponsable().getNombreCompleto() : null)
+                        .fechaRegistro(actividad.getFechaRegistro() != null ? actividad.getFechaRegistro().toString() : null)
+                        .fechaActualizacion(actividad.getFechaActualizacion() != null
+                                ? actividad.getFechaActualizacion().toString()
+                                : actividad.getFechaCambioEstado() != null ? actividad.getFechaCambioEstado().toString() : null)
                         .fechaInicio(actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null)
                         .fechaFin(actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null)
                         .descripcion(actividad.getDescripcion())

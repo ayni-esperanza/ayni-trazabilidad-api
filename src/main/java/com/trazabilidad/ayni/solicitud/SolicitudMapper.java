@@ -35,6 +35,8 @@ public class SolicitudMapper {
                 .costo(solicitud.getCosto())
                 .responsableId(solicitud.getResponsable().getId())
                 .responsableNombre(solicitud.getResponsable().getNombreCompleto())
+                .creadorId(resolveCreadorId(solicitud))
+                .creadorNombre(resolveCreadorNombre(solicitud))
                 .descripcion(solicitud.getDescripcion())
                 .ubicacion(solicitud.getUbicacion())
                 .areas(solicitud.getAreas())
@@ -108,5 +110,19 @@ public class SolicitudMapper {
         return solicitudes.stream()
                 .map(SolicitudMapper::toResponse)
                 .toList();
+    }
+
+    private static Long resolveCreadorId(Solicitud solicitud) {
+        if (solicitud.getCreador() != null) {
+            return solicitud.getCreador().getId();
+        }
+        return solicitud.getResponsable() != null ? solicitud.getResponsable().getId() : null;
+    }
+
+    private static String resolveCreadorNombre(Solicitud solicitud) {
+        if (solicitud.getCreador() != null) {
+            return solicitud.getCreador().getNombreCompleto();
+        }
+        return solicitud.getResponsable() != null ? solicitud.getResponsable().getNombreCompleto() : null;
     }
 }
