@@ -16,6 +16,7 @@ import com.trazabilidad.ayni.proyecto.Proyecto;
 import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
 import com.trazabilidad.ayni.proyecto.ProyectoMapper;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
 import com.trazabilidad.ayni.solicitud.SolicitudRepository;
@@ -37,6 +38,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -153,10 +155,22 @@ public class DashboardService {
                 antiguedad = years + " años " + months + " meses";
             }
 
+            String rol = u.getRoles() == null || u.getRoles().isEmpty()
+                    ? ""
+                    : u.getRoles().stream()
+                            .filter(rolUsuario -> rolUsuario.getActivo() == null || Boolean.TRUE.equals(rolUsuario.getActivo()))
+                            .map(Rol::getNombre)
+                            .sorted(String.CASE_INSENSITIVE_ORDER)
+                            .collect(Collectors.joining(", "));
+
+            String area = u.getArea() != null ? u.getArea().trim() : "";
+
             list.add(ResponsableIndicadorResponse.builder()
                     .id(u.getId())
                     .nombre(u.getNombreCompleto())
                     .cargo("")
+                    .rol(rol)
+                    .area(area)
                     .antiguedad(antiguedad)
                     .participacionProyectos((int) participacionProyectos)
                     .tareasRealizadas(0L)

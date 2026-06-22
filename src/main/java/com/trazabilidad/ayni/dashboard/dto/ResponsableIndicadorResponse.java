@@ -16,6 +16,8 @@ public class ResponsableIndicadorResponse {
     private Long id;
     private String nombre;
     private String cargo;
+    private String rol;
+    private String area;
     private String antiguedad;
     private Integer participacionProyectos;
     private Long tareasRealizadas;

@@ -5,6 +5,6 @@
 target
 logs
 .env
-.env.prod.example
+.env.prod
 *.log
 README.md

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,8 +42,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ProyectoService {
+    private static final long VENTANA_DUPLICADO_HISTORIAL_SEGUNDOS = 5;
 
     private final ProyectoRepository proyectoRepository;
+    private final ProyectoResponsableHistorialRepository proyectoResponsableHistorialRepository;
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
     private final CostoAdicionalCategoriaRepository costoAdicionalCategoriaRepository;
@@ -232,13 +235,9 @@ public class ProyectoService {
 
         if (request.getResponsableId() != null
                 && (proyecto.getResponsable() == null || !proyecto.getResponsable().getId().equals(request.getResponsableId()))) {
-            if (proyecto.getResponsable() != null) {
-                proyecto.setResponsableAnteriorId(proyecto.getResponsable().getId());
-                proyecto.setResponsableAnteriorNombre(obtenerNombreResponsableActual(proyecto));
-            }
-
             Usuario responsable = usuarioRepository.findById(request.getResponsableId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
+            registrarCambioResponsable(proyecto, responsable);
             proyecto.setResponsable(responsable);
             proyecto.setResponsableNombre(responsable.getNombreCompleto());
         }
@@ -555,6 +554,40 @@ public class ProyectoService {
             return proyecto.getResponsableNombre().trim();
         }
         return proyecto.getResponsable() != null ? proyecto.getResponsable().getNombreCompleto() : null;
+    }
+
+    private void registrarCambioResponsable(Proyecto proyecto, Usuario nuevoResponsable) {
+        if (proyecto == null || proyecto.getResponsable() == null || nuevoResponsable == null) {
+            return;
+        }
+
+        Long responsableAnteriorId = proyecto.getResponsable().getId();
+        String responsableAnteriorNombre = obtenerNombreResponsableActual(proyecto);
+        LocalDateTime fechaCambio = LocalDateTime.now();
+
+        ProyectoResponsableHistorial ultimoCambio = proyectoResponsableHistorialRepository
+                .findFirstByProyectoIdOrderByFechaCambioDescIdDesc(proyecto.getId())
+                .orElse(null);
+
+        boolean esDuplicadoReciente = ultimoCambio != null
+                && Objects.equals(ultimoCambio.getResponsableAnteriorId(), responsableAnteriorId)
+                && Objects.equals(ultimoCambio.getResponsableNuevoId(), nuevoResponsable.getId())
+                && ultimoCambio.getFechaCambio() != null
+                && !ultimoCambio.getFechaCambio().isBefore(fechaCambio.minusSeconds(VENTANA_DUPLICADO_HISTORIAL_SEGUNDOS));
+
+        if (!esDuplicadoReciente) {
+            proyectoResponsableHistorialRepository.save(ProyectoResponsableHistorial.builder()
+                    .proyecto(proyecto)
+                    .responsableAnteriorId(responsableAnteriorId)
+                    .responsableAnteriorNombre(responsableAnteriorNombre)
+                    .responsableNuevoId(nuevoResponsable.getId())
+                    .responsableNuevoNombre(nuevoResponsable.getNombreCompleto())
+                    .fechaCambio(fechaCambio)
+                    .build());
+        }
+
+        proyecto.setResponsableAnteriorId(responsableAnteriorId);
+        proyecto.setResponsableAnteriorNombre(responsableAnteriorNombre);
     }
 
     private LocalDate parseLocalDate(String value) {
