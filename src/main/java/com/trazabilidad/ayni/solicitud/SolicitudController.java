@@ -44,6 +44,8 @@ public class SolicitudController {
 
             @Parameter(description = "Filtrar por estado") @RequestParam(required = false) String estado,
 
+            @Parameter(description = "Filtrar por cliente/empresa") @RequestParam(required = false) String cliente,
+
             @Parameter(description = "Filtrar por responsable") @RequestParam(required = false) Long responsableId,
 
             @Parameter(description = "Fecha desde (formato: yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
@@ -69,7 +71,7 @@ public class SolicitudController {
         }
 
         PaginatedResponse<SolicitudResponse> response = solicitudService.listar(
-                search, estadoFiltro, responsableId, fechaDesde, fechaHasta, pageable);
+                search, estadoFiltro, cliente, responsableId, fechaDesde, fechaHasta, pageable);
 
         return ResponseEntity.ok(response);
     }

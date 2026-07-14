@@ -36,9 +36,10 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long>,
                         "      LOWER(s.cliente) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
                         "      LOWER(s.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) " +
                         "  AND (CAST(:estado AS text) IS NULL OR s.estado = CAST(:estado AS text)) " +
+                        "  AND (CAST(:cliente AS text) IS NULL OR LOWER(s.cliente) = LOWER(CAST(:cliente AS text))) " +
                         "  AND (:responsableId IS NULL OR s.responsable_id = :responsableId) " +
-                        "  AND (:desde IS NULL OR s.fecha_solicitud >= :desde) " +
-                        "  AND (:hasta IS NULL OR s.fecha_solicitud <= :hasta)", countQuery = "SELECT COUNT(*) FROM solicitudes s "
+                        "  AND (CAST(:desde AS date) IS NULL OR s.fecha_solicitud >= CAST(:desde AS date)) " +
+                        "  AND (CAST(:hasta AS date) IS NULL OR s.fecha_solicitud <= CAST(:hasta AS date))", countQuery = "SELECT COUNT(*) FROM solicitudes s "
                                         +
                                         "WHERE (CAST(:search AS text) IS NULL OR " +
                                         "      LOWER(s.nombre_proyecto) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR "
@@ -48,12 +49,14 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long>,
                                         "      LOWER(s.descripcion) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) "
                                         +
                                         "  AND (CAST(:estado AS text) IS NULL OR s.estado = CAST(:estado AS text)) " +
-                                        "  AND (:responsableId IS NULL OR s.responsable_id = :responsableId) " +
-                                        "  AND (:desde IS NULL OR s.fecha_solicitud >= :desde) " +
-                                        "  AND (:hasta IS NULL OR s.fecha_solicitud <= :hasta)", nativeQuery = true)
+                        "  AND (CAST(:cliente AS text) IS NULL OR LOWER(s.cliente) = LOWER(CAST(:cliente AS text))) " +
+                        "  AND (:responsableId IS NULL OR s.responsable_id = :responsableId) " +
+                        "  AND (CAST(:desde AS date) IS NULL OR s.fecha_solicitud >= CAST(:desde AS date)) " +
+                        "  AND (CAST(:hasta AS date) IS NULL OR s.fecha_solicitud <= CAST(:hasta AS date))", nativeQuery = true)
         Page<Solicitud> buscarConFiltros(
                         @Param("search") String search,
-                        @Param("estado") EstadoSolicitud estado,
+                        @Param("estado") String estado,
+                        @Param("cliente") String cliente,
                         @Param("responsableId") Long responsableId,
                         @Param("desde") LocalDate desde,
                         @Param("hasta") LocalDate hasta,

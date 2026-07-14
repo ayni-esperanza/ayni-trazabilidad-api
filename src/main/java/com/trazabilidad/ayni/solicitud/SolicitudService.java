@@ -90,13 +90,14 @@ public class SolicitudService {
         public PaginatedResponse<SolicitudResponse> listar(
                         String search,
                         EstadoSolicitud estado,
+                        String cliente,
                         Long responsableId,
                         LocalDate fechaDesde,
                         LocalDate fechaHasta,
                         Pageable pageable) {
                 Pageable translatedPageable = translatePageable(pageable);
                 Page<Solicitud> page = solicitudRepository.buscarConFiltros(
-                                search, estado, responsableId, fechaDesde, fechaHasta, translatedPageable);
+                                search, estado != null ? estado.name() : null, cliente, responsableId, fechaDesde, fechaHasta, translatedPageable);
 
                 return PaginatedResponse.<SolicitudResponse>builder()
                                 .content(page.getContent().stream()
