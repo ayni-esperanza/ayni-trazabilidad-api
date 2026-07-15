@@ -132,10 +132,19 @@ public class ProyectoMapper {
         if (proyecto == null) {
             return null;
         }
-        if (proyecto.getSolicitud() != null && proyecto.getSolicitud().getFechaActualizacion() != null) {
-            return proyecto.getSolicitud().getFechaActualizacion();
+
+        LocalDateTime fechaProyecto = proyecto.getFechaActualizacion();
+        LocalDateTime fechaSolicitud = proyecto.getSolicitud() != null
+                ? proyecto.getSolicitud().getFechaActualizacion()
+                : null;
+
+        if (fechaProyecto == null) {
+            return fechaSolicitud;
         }
-        return proyecto.getFechaActualizacion();
+        if (fechaSolicitud == null) {
+            return fechaProyecto;
+        }
+        return fechaProyecto.isAfter(fechaSolicitud) ? fechaProyecto : fechaSolicitud;
     }
 
     private static List<OrdenCompraResponse> mapOrdenesCompra(List<OrdenCompra> ordenesCompra, Function<String, String> publicUrlResolver) {

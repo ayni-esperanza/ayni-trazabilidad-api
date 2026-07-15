@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ProyectoMapperTest {
 
     @Test
-    void toResponseUsaFechasDeSolicitudCuandoExisteRelacion() {
+    void toResponseUsaFechaActualizacionMasRecienteCuandoExisteRelacion() {
         Usuario responsable = usuario(7L, "Ana", "Luna");
 
         Solicitud solicitud = Solicitud.builder()
@@ -59,7 +59,7 @@ class ProyectoMapperTest {
 
         assertEquals(LocalDate.of(2026, 6, 3), response.getFechaRegistro());
         assertEquals(LocalDateTime.of(2026, 6, 3, 8, 15), response.getFechaCreacion());
-        assertEquals(LocalDateTime.of(2026, 6, 5, 14, 45), response.getFechaActualizacion());
+        assertEquals(LocalDateTime.of(2026, 6, 12, 16, 30), response.getFechaActualizacion());
     }
 
     @Test
