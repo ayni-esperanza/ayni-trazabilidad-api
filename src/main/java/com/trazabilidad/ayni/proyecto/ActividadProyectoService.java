@@ -1,15 +1,22 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
+import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.shared.security.CurrentUserService;
 import com.trazabilidad.ayni.usuario.Usuario;
 import com.trazabilidad.ayni.usuario.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +47,30 @@ public class ActividadProyectoService {
     public List<FlujoNodoResponse> listarPorProyecto(Long proyectoId) {
         validarProyectoExiste(proyectoId);
         return mapToFlujoNodos(actividadProyectoRepository.findByProyectoId(proyectoId));
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FlujoNodoResponse> listarPorProyectoPaginado(
+            Long proyectoId,
+            String search,
+            String estado,
+            Long responsableId,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Pageable pageable) {
+        validarProyectoExiste(proyectoId);
+
+        Page<ActividadProyecto> actividades = actividadProyectoRepository.findAll(
+                construirFiltroActividades(proyectoId, search, estado, responsableId, fechaDesde, fechaHasta),
+                pageable);
+
+        return PaginatedResponse.<FlujoNodoResponse>builder()
+                .content(actividades.getContent().stream().map(this::mapToFlujoNodo).toList())
+                .totalElements(actividades.getTotalElements())
+                .totalPages(actividades.getTotalPages())
+                .page(actividades.getNumber())
+                .size(actividades.getSize())
+                .build();
     }
 
     public FlujoNodoResponse crear(Long proyectoId, ActividadProyectoRequest request) {
@@ -204,6 +235,57 @@ public class ActividadProyectoService {
         List<ActividadProyecto> saved = actividadProyectoRepository.saveAll(existentes);
         proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
         return mapToFlujoNodos(saved);
+    }
+
+    private Specification<ActividadProyecto> construirFiltroActividades(
+            Long proyectoId,
+            String search,
+            String estado,
+            Long responsableId,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("proyecto").get("id"), proyectoId));
+
+            String termino = normalizarTextoFiltro(search);
+            if (termino != null) {
+                String likeTermino = "%" + termino.toLowerCase() + "%";
+                Expression<String> descripcion = criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("descripcion"), ""));
+                Expression<String> responsableNombre = criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("responsableNombre"), ""));
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("nombre")), likeTermino),
+                        criteriaBuilder.like(descripcion, likeTermino),
+                        criteriaBuilder.like(responsableNombre, likeTermino)));
+            }
+
+            String estadoFiltro = normalizarTextoFiltro(estado);
+            if (estadoFiltro != null) {
+                Expression<String> estadoActividad = criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("estadoActividad"), ""));
+                predicates.add(criteriaBuilder.equal(estadoActividad, estadoFiltro.toLowerCase()));
+            }
+
+            if (responsableId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("responsable").get("id"), responsableId));
+            }
+
+            if (fechaDesde != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("fechaInicio"), fechaDesde));
+            }
+
+            if (fechaHasta != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("fechaInicio"), fechaHasta));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private String normalizarTextoFiltro(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
     }
 
     private void replaceAdjuntos(ActividadProyecto actividad, List<ActividadAdjuntoRequest> adjuntos) {
