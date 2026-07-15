@@ -137,11 +137,11 @@ public class SpreadsheetUploadOptimizerService {
         targetSheet.setDefaultColumnWidth(sourceSheet.getDefaultColumnWidth());
         targetSheet.setDefaultRowHeight(sourceSheet.getDefaultRowHeight());
 
-        if (sourceSheet.getMargin(Sheet.LeftMargin) > 0) {
-            targetSheet.setMargin(Sheet.LeftMargin, sourceSheet.getMargin(Sheet.LeftMargin));
-            targetSheet.setMargin(Sheet.RightMargin, sourceSheet.getMargin(Sheet.RightMargin));
-            targetSheet.setMargin(Sheet.TopMargin, sourceSheet.getMargin(Sheet.TopMargin));
-            targetSheet.setMargin(Sheet.BottomMargin, sourceSheet.getMargin(Sheet.BottomMargin));
+        if (sourceSheet.getMargin(PageMargin.LEFT) > 0) {
+            targetSheet.setMargin(PageMargin.LEFT, sourceSheet.getMargin(PageMargin.LEFT));
+            targetSheet.setMargin(PageMargin.RIGHT, sourceSheet.getMargin(PageMargin.RIGHT));
+            targetSheet.setMargin(PageMargin.TOP, sourceSheet.getMargin(PageMargin.TOP));
+            targetSheet.setMargin(PageMargin.BOTTOM, sourceSheet.getMargin(PageMargin.BOTTOM));
         }
 
         for (int i = sourceSheet.getFirstRowNum(); i <= sourceSheet.getLastRowNum(); i++) {
@@ -247,7 +247,7 @@ public class SpreadsheetUploadOptimizerService {
         if (cachedStyle == null) {
             CellStyle newStyle = targetWorkbook.createCellStyle();
             newStyle.cloneStyleFrom(sourceStyle);
-            int sourceFontIndex = sourceStyle.getFontIndexAsInt();
+            int sourceFontIndex = sourceStyle.getFontIndex();
             if (sourceFontIndex >= 0) {
                 Font sourceFont = sourceWorkbook.getFontAt(sourceFontIndex);
                 Font targetFont = findOrCreateFont(targetWorkbook, sourceFont);

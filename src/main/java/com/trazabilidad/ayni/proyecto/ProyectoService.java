@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -373,75 +372,6 @@ public class ProyectoService {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private List<ActividadProyecto> mapFlujo(FlujoProyectoResponse flujo, Proyecto proyecto) {
-        if (flujo == null || flujo.getNodos() == null) {
-            return new ArrayList<>();
-        }
-
-        Map<Long, ActividadProyecto> index = new LinkedHashMap<>();
-
-        for (FlujoNodoResponse nodo : flujo.getNodos()) {
-            if (nodo.getId() == null) {
-                continue;
-            }
-
-            Usuario responsableActividad = null;
-            if (nodo.getResponsableId() != null) {
-                responsableActividad = usuarioRepository.findById(nodo.getResponsableId())
-                        .orElseThrow(() -> new EntityNotFoundException("Usuario", nodo.getResponsableId()));
-            }
-
-            ActividadProyecto actividad = ActividadProyecto.builder()
-                    .proyecto(proyecto)
-                    .nombre(nodo.getNombre() != null ? nodo.getNombre() : "Actividad")
-                    .tipo(nodo.getTipo() != null ? nodo.getTipo() : "tarea")
-                    .tipoActividad(resolveTipoActividad(nodo.getTipoActividad(), proyecto))
-                    .estadoActividad(nodo.getEstadoActividad())
-                    .fechaCambioEstado(parseLocalDateTime(nodo.getFechaCambioEstado()))
-                    .responsable(responsableActividad)
-                    .responsableNombre(nodo.getResponsableNombre() != null ? nodo.getResponsableNombre()
-                            : (responsableActividad != null ? responsableActividad.getNombreCompleto() : null))
-                    .fechaInicio(parseLocalDate(nodo.getFechaInicio()))
-                    .fechaFin(parseLocalDate(nodo.getFechaFin()))
-                    .descripcion(nodo.getDescripcion())
-                    .adjuntos(new java.util.ArrayList<>())
-                    .siguientes(new java.util.ArrayList<>())
-                    .build();
-
-            if (nodo.getAdjuntos() != null) {
-                for (FlujoAdjuntoResponse adjunto : nodo.getAdjuntos()) {
-                    ActividadAdjunto entityAdjunto = ActividadAdjunto.builder()
-                            .actividad(actividad)
-                            .nombre(adjunto.getNombre())
-                            .tipo(adjunto.getTipo())
-                            .tamano(adjunto.getTamano())
-                            .objectKey(adjunto.getObjectKey())
-                            .dataUrl(adjunto.getDataUrl())
-                            .build();
-                    actividad.getAdjuntos().add(entityAdjunto);
-                }
-            }
-
-            index.put(nodo.getId(), actividad);
-        }
-
-        for (FlujoNodoResponse nodo : flujo.getNodos()) {
-            if (nodo.getId() == null || nodo.getSiguientesIds() == null) {
-                continue;
-            }
-            ActividadProyecto source = index.get(nodo.getId());
-            if (source == null) {
-                continue;
-            }
-            source.setSiguientes(nodo.getSiguientesIds().stream()
-                    .map(index::get)
-                    .filter(java.util.Objects::nonNull)
-                    .collect(Collectors.toList()));
-        }
-
-        return new ArrayList<>(index.values());
-    }
-
     private TipoActividadProyecto resolveTipoActividad(String tipoActividad, Proyecto proyecto) {
         if (tipoActividad != null && !tipoActividad.isBlank()) {
             try {
@@ -601,16 +531,6 @@ public class ProyectoService {
         }
     }
 
-    private LocalDateTime parseLocalDateTime(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDateTime.parse(value);
-        } catch (Exception ex) {
-            return null;
-        }
-    }
 
     private LocalDateTime parseLocalDateTimeFlexible(String value) {
         if (value == null || value.isBlank()) {

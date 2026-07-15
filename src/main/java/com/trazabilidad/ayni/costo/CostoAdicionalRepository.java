@@ -3,7 +3,6 @@ package com.trazabilidad.ayni.costo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.List;
 /**
  * Repositorio para la entidad CostoAdicional.
  */
-@Repository
 public interface CostoAdicionalRepository extends JpaRepository<CostoAdicional, Long> {
 
     /**
@@ -20,7 +18,7 @@ public interface CostoAdicionalRepository extends JpaRepository<CostoAdicional, 
     List<CostoAdicional> findByProyectoId(Long proyectoId);
 
     /**
-     * Encuentra costos adicionales por proyecto y categoría.
+     * Encuentra costos adicionales por proyecto y categorÃ­a.
      */
     List<CostoAdicional> findByProyectoIdAndCategoria(Long proyectoId, String categoria);
 
@@ -36,7 +34,7 @@ public interface CostoAdicionalRepository extends JpaRepository<CostoAdicional, 
     BigDecimal sumCostoTotalByProyectoId(@Param("proyectoId") Long proyectoId);
 
     /**
-     * Obtiene las categorías distintas usadas en un proyecto.
+     * Obtiene las categorÃ­as distintas usadas en un proyecto.
      */
     @Query("SELECT DISTINCT c.categoria FROM CostoAdicional c WHERE c.proyecto.id = :proyectoId ORDER BY c.categoria")
     List<String> findDistinctCategoriasByProyectoId(@Param("proyectoId") Long proyectoId);

@@ -3,15 +3,13 @@ package com.trazabilidad.ayni.permiso;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para la gestión de permisos.
+ * Repositorio para la gestiÃ³n de permisos.
  */
-@Repository
 public interface PermisoRepository extends JpaRepository<Permiso, Long> {
 
     /**
@@ -25,12 +23,12 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
     boolean existsByNombre(String nombre);
 
     /**
-     * Obtiene permisos por módulo
+     * Obtiene permisos por mÃ³dulo
      */
     List<Permiso> findByModulo(String modulo);
 
     /**
-     * Obtiene permisos de múltiples módulos
+     * Obtiene permisos de mÃºltiples mÃ³dulos
      */
     List<Permiso> findByModuloIn(List<String> modulos);
 
@@ -44,13 +42,13 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
     List<Permiso> buscarPorTexto(@Param("search") String search);
 
     /**
-     * Obtiene todos los módulos únicos
+     * Obtiene todos los mÃ³dulos Ãºnicos
      */
     @Query("SELECT DISTINCT p.modulo FROM Permiso p ORDER BY p.modulo")
     List<String> obtenerModulosUnicos();
 
     /**
-     * Cuenta permisos por módulo
+     * Cuenta permisos por mÃ³dulo
      */
     Long countByModulo(String modulo);
 }
