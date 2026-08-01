@@ -17,8 +17,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -42,6 +45,9 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        asegurarPermisosBase();
+        asegurarRolesBase();
+
         if (adminUsername == null || adminUsername.isBlank()) {
             throw new IllegalStateException("La variable ADMIN_USERNAME es obligatoria para inicializar el usuario admin");
         }
@@ -52,7 +58,8 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
             throw new IllegalStateException("La variable ADMIN_PASSWORD es obligatoria cuando el usuario admin no existe");
         }
 
-        Rol rolAdministrador = obtenerOCrearRolAdministrador();
+        Rol rolAdministrador = rolRepository.findByNombre(Constants.Roles.ADMINISTRADOR)
+                .orElseThrow(() -> new IllegalStateException("Rol ADMINISTRADOR no encontrado despues del bootstrap"));
         Usuario admin = adminExistente != null ? adminExistente : crearAdmin(rolAdministrador);
 
         boolean actualizado = false;
@@ -79,21 +86,128 @@ public class AdminBootstrapInitializer implements CommandLineRunner {
         }
     }
 
-    private Rol obtenerOCrearRolAdministrador() {
-        return rolRepository.findByNombre(Constants.Roles.ADMINISTRADOR)
-                .orElseGet(() -> {
-                    List<Permiso> permisos = permisoRepository.findAll();
-                    Rol rol = Rol.builder()
-                            .nombre(Constants.Roles.ADMINISTRADOR)
-                            .descripcion("Acceso completo al sistema")
-                            .activo(true)
-                            .permisos(new HashSet<>(permisos))
-                            .usuarios(new HashSet<>())
-                            .build();
-                    Rol creado = rolRepository.save(rol);
-                    log.warn("Rol ADMINISTRADOR no existia y fue creado automaticamente");
-                    return creado;
-                });
+    private void asegurarPermisosBase() {
+        List<Permiso> permisos = new ArrayList<>();
+        permisos.add(asegurarPermiso(
+                "PERM_USUARIOS",
+                Constants.Modulos.USUARIOS,
+                "Gestion completa de usuarios",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_ROLES",
+                Constants.Modulos.ROLES,
+                "Gestion completa de roles",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_PERMISOS",
+                Constants.Modulos.PERMISOS,
+                "Gestion completa de permisos",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_SOLICITUDES",
+                Constants.Modulos.SOLICITUDES,
+                "Gestion de solicitudes",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_EVIDENCIAS",
+                Constants.Modulos.EVIDENCIAS,
+                "Gestion de informes y evidencias",
+                Set.of(Constants.Acciones.CREAR, Constants.Acciones.LEER, Constants.Acciones.ACTUALIZAR, Constants.Acciones.ELIMINAR)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_TABLERO",
+                Constants.Modulos.TABLERO,
+                "Acceso al tablero de control",
+                Set.of(Constants.Acciones.LEER)
+        ));
+        permisos.add(asegurarPermiso(
+                "PERM_ESTADISTICAS",
+                Constants.Modulos.ESTADISTICAS,
+                "Visualizacion de estadisticas e indicadores",
+                Set.of(Constants.Acciones.LEER)
+        ));
+        log.info("Permisos base verificados/creados: {}", permisos.size());
+    }
+
+    private void asegurarRolesBase() {
+        Map<String, Permiso> permisosPorModulo = new HashMap<>();
+        List<Permiso> todosLosPermisos = permisoRepository.findAll();
+        todosLosPermisos.forEach(permiso -> permisosPorModulo.put(permiso.getModulo(), permiso));
+
+        asegurarRol(
+                Constants.Roles.ADMINISTRADOR,
+                "Acceso completo al sistema",
+                new HashSet<>(todosLosPermisos)
+        );
+        asegurarRol(
+                Constants.Roles.INGENIERO,
+                "Gestion tecnica y seguimiento",
+                setSinNulos(
+                        permisosPorModulo.get(Constants.Modulos.SOLICITUDES),
+                        permisosPorModulo.get(Constants.Modulos.EVIDENCIAS),
+                        permisosPorModulo.get(Constants.Modulos.TABLERO),
+                        permisosPorModulo.get(Constants.Modulos.ESTADISTICAS)
+                )
+        );
+        asegurarRol(
+                Constants.Roles.GERENTE,
+                "Supervision y gestion de operaciones",
+                setSinNulos(
+                        permisosPorModulo.get(Constants.Modulos.SOLICITUDES),
+                        permisosPorModulo.get(Constants.Modulos.EVIDENCIAS),
+                        permisosPorModulo.get(Constants.Modulos.TABLERO),
+                        permisosPorModulo.get(Constants.Modulos.ESTADISTICAS)
+                )
+        );
+        asegurarRol(
+                Constants.Roles.ASISTENTE,
+                "Registro de solicitudes y consultas basicas",
+                setSinNulos(
+                        permisosPorModulo.get(Constants.Modulos.SOLICITUDES),
+                        permisosPorModulo.get(Constants.Modulos.TABLERO)
+                )
+        );
+    }
+
+    private Permiso asegurarPermiso(String nombre, String modulo, String descripcion, Set<String> acciones) {
+        return permisoRepository.findByNombre(nombre)
+                .map(existente -> {
+                    existente.setModulo(modulo);
+                    existente.setDescripcion(descripcion);
+                    existente.setAcciones(new HashSet<>(acciones));
+                    return permisoRepository.save(existente);
+                })
+                .orElseGet(() -> permisoRepository.save(Permiso.builder()
+                        .nombre(nombre)
+                        .modulo(modulo)
+                        .descripcion(descripcion)
+                        .acciones(new HashSet<>(acciones))
+                        .build()));
+    }
+
+    private void asegurarRol(String nombre, String descripcion, Set<Permiso> permisos) {
+        Rol rol = rolRepository.findByNombre(nombre).orElseGet(() -> Rol.builder()
+                .nombre(nombre)
+                .usuarios(new HashSet<>())
+                .build());
+        rol.setDescripcion(descripcion);
+        rol.setActivo(true);
+        rol.setPermisos(new HashSet<>(permisos));
+        rolRepository.save(rol);
+    }
+
+    private Set<Permiso> setSinNulos(Permiso... permisos) {
+        Set<Permiso> resultado = new HashSet<>();
+        for (Permiso permiso : permisos) {
+            if (permiso != null) {
+                resultado.add(permiso);
+            }
+        }
+        return resultado;
     }
 
     private Usuario crearAdmin(Rol rolAdministrador) {
