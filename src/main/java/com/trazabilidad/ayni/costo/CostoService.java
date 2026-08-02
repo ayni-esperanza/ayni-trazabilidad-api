@@ -521,9 +521,7 @@ public class CostoService {
         }
 
         return costoMaterialTipoRepository.findByNombreIgnoreCase(nombreTipo)
-                .orElseGet(() -> costoMaterialTipoRepository.save(CostoMaterialTipo.builder()
-                        .nombre(nombreTipo)
-                        .build()));
+                .orElse(null);
     }
 
 
