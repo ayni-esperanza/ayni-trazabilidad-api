@@ -77,7 +77,7 @@ public class CostoController {
     }
 
     @PutMapping("/materiales/tipos-registro/{tipoId}")
-    @Operation(summary = "Actualizar tipo de material", description = "Renombra un tipo de material y actualiza sus items relacionados")
+    @Operation(summary = "Actualizar tipo de material", description = "Renombra un tipo de material para nuevos registros sin modificar los existentes")
     public ResponseEntity<CostoCatalogoResponse> actualizarTipoMaterial(
             @PathVariable Long proyectoId,
             @PathVariable Long tipoId,
@@ -86,7 +86,7 @@ public class CostoController {
     }
 
     @DeleteMapping("/materiales/tipos-registro/{tipoId}")
-    @Operation(summary = "Eliminar tipo de material", description = "Elimina un tipo de material del proyecto")
+    @Operation(summary = "Eliminar tipo de material", description = "Elimina un tipo de material del catálogo sin alterar los registros existentes")
     public ResponseEntity<Void> eliminarTipoMaterial(
             @PathVariable Long proyectoId,
             @PathVariable Long tipoId) {
@@ -185,7 +185,7 @@ public class CostoController {
     }
 
     @PutMapping("/mano-obra/oficios-registro/{oficioId}")
-    @Operation(summary = "Actualizar oficio", description = "Renombra un oficio y actualiza sus items relacionados")
+    @Operation(summary = "Actualizar oficio", description = "Renombra un oficio para nuevos registros sin modificar los existentes")
     public ResponseEntity<CostoCatalogoResponse> actualizarOficioManoObra(
             @PathVariable Long proyectoId,
             @PathVariable Long oficioId,
@@ -194,7 +194,7 @@ public class CostoController {
     }
 
     @DeleteMapping("/mano-obra/oficios-registro/{oficioId}")
-    @Operation(summary = "Eliminar oficio", description = "Elimina un oficio del proyecto")
+    @Operation(summary = "Eliminar oficio", description = "Elimina un oficio del catálogo sin alterar los registros existentes")
     public ResponseEntity<Void> eliminarOficioManoObra(
             @PathVariable Long proyectoId,
             @PathVariable Long oficioId) {

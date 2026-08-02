@@ -88,11 +88,9 @@ public class CostoService {
                 .ifPresent(existente -> {
                     throw new BadRequestException("Ya existe un tipo de material con ese nombre en el sistema");
                 });
-
-        String nombreAnterior = tipo.getNombre();
         tipo.setNombre(nombreNuevo);
         tipo = costoMaterialTipoRepository.save(tipo);
-        actualizarTiposMaterialRelacionados(proyectoId, tipo, nombreAnterior, nombreNuevo);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
         return toCatalogoResponse(tipo);
     }
 
@@ -100,9 +98,12 @@ public class CostoService {
         obtenerProyecto(proyectoId);
         CostoMaterialTipo tipo = costoMaterialTipoRepository.findById(tipoId)
                 .orElseThrow(() -> new EntityNotFoundException("CostoMaterialTipo", tipoId));
-        if (!costoMaterialRepository.findByTipoMaterialId(tipoId).isEmpty()
-                || !costoMaterialRepository.findByTipoIgnoreCase(tipo.getNombre()).isEmpty()) {
-            throw new BadRequestException("No se puede eliminar el tipo de material porque está en uso");
+        List<CostoMaterial> materialesRelacionados = costoMaterialRepository.findByTipoMaterialId(tipoId);
+        for (CostoMaterial material : materialesRelacionados) {
+            material.setTipoMaterial(null);
+        }
+        if (!materialesRelacionados.isEmpty()) {
+            costoMaterialRepository.saveAll(materialesRelacionados);
         }
         costoMaterialTipoRepository.delete(tipo);
         proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
@@ -227,11 +228,9 @@ public class CostoService {
                 .ifPresent(existente -> {
                     throw new BadRequestException("Ya existe un oficio con ese nombre en el sistema");
                 });
-
-        String nombreAnterior = oficio.getNombre();
         oficio.setNombre(nombreNuevo);
         oficio = costoManoObraOficioRepository.save(oficio);
-        actualizarOficiosRelacionados(proyectoId, nombreAnterior, nombreNuevo);
+        proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
         return toCatalogoResponse(oficio);
     }
 
@@ -239,9 +238,6 @@ public class CostoService {
         obtenerProyecto(proyectoId);
         CostoManoObraOficio oficio = costoManoObraOficioRepository.findById(oficioId)
                 .orElseThrow(() -> new EntityNotFoundException("CostoManoObraOficio", oficioId));
-        if (!costoManoObraRepository.findByFuncionIgnoreCase(oficio.getNombre()).isEmpty()) {
-            throw new BadRequestException("No se puede eliminar el oficio porque esta en uso");
-        }
         costoManoObraOficioRepository.delete(oficio);
         proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
@@ -497,56 +493,6 @@ public class CostoService {
                 .build();
     }
 
-    private void actualizarTiposMaterialRelacionados(Long proyectoId, CostoMaterialTipo tipoActualizado, String nombreAnterior, String nombreNuevo) {
-        if (nombreAnterior == null || Objects.equals(nombreAnterior, nombreNuevo)) {
-            proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
-            return;
-        }
-
-        java.util.LinkedHashMap<Long, CostoMaterial> materiales = new java.util.LinkedHashMap<>();
-        for (CostoMaterial material : costoMaterialRepository.findByTipoIgnoreCase(nombreAnterior)) {
-            materiales.put(material.getId(), material);
-        }
-
-        for (CostoMaterial material : costoMaterialRepository.findByTipoMaterialId(tipoActualizado.getId())) {
-            materiales.put(material.getId(), material);
-        }
-
-        java.util.LinkedHashSet<Long> proyectosAfectados = new java.util.LinkedHashSet<>();
-        for (CostoMaterial material : materiales.values()) {
-            material.setTipo(nombreNuevo);
-            material.setTipoMaterial(tipoActualizado);
-            if (material.getProyecto() != null && material.getProyecto().getId() != null) {
-                proyectosAfectados.add(material.getProyecto().getId());
-            }
-        }
-        if (!materiales.isEmpty()) {
-            costoMaterialRepository.saveAll(materiales.values());
-        }
-
-        marcarProyectosComoModificados(proyectoId, proyectosAfectados);
-    }
-
-    private void actualizarOficiosRelacionados(Long proyectoId, String nombreAnterior, String nombreNuevo) {
-        if (nombreAnterior == null || Objects.equals(nombreAnterior, nombreNuevo)) {
-            proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
-            return;
-        }
-
-        List<CostoManoObra> manoObras = costoManoObraRepository.findByFuncionIgnoreCase(nombreAnterior);
-        java.util.LinkedHashSet<Long> proyectosAfectados = new java.util.LinkedHashSet<>();
-        for (CostoManoObra manoObra : manoObras) {
-            manoObra.setFuncion(nombreNuevo);
-            if (manoObra.getProyecto() != null && manoObra.getProyecto().getId() != null) {
-                proyectosAfectados.add(manoObra.getProyecto().getId());
-            }
-        }
-        if (!manoObras.isEmpty()) {
-            costoManoObraRepository.saveAll(manoObras);
-        }
-
-        marcarProyectosComoModificados(proyectoId, proyectosAfectados);
-    }
 
     private String normalizarNombreCatalogo(String nombre) {
         return nombre == null ? "" : nombre.trim();
@@ -580,14 +526,6 @@ public class CostoService {
                         .build()));
     }
 
-    private void marcarProyectosComoModificados(Long proyectoIdOrigen, java.util.LinkedHashSet<Long> proyectoIds) {
-        proyectoLifecycleService.marcarProyectoComoModificado(proyectoIdOrigen);
-        for (Long proyectoId : proyectoIds) {
-            if (proyectoId != null && !Objects.equals(proyectoId, proyectoIdOrigen)) {
-                proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
-            }
-        }
-    }
 
     private List<String> combinarNombresCatalogo(List<String> persistidos, List<String> registrados) {
         return Stream.concat(persistidos.stream(), registrados.stream())
