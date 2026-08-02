@@ -6,6 +6,7 @@ import com.trazabilidad.ayni.proyecto.ActividadProyectoRepository;
 import com.trazabilidad.ayni.proyecto.Proyecto;
 import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,25 @@ public class AlertaActividadService {
     private final ActividadProyectoRepository actividadProyectoRepository;
     private final ProyectoRepository proyectoRepository;
     private final ProyectoLifecycleService proyectoLifecycleService;
+
+    public PaginatedResponse<AlertaActividadResponse> listarAlertasPaginadas(Integer page, Integer size) {
+        int pageValue = page != null && page >= 0 ? page : 0;
+        int sizeValue = size != null && size > 0 ? size : 100;
+        List<AlertaActividadResponse> alertas = listarAlertas();
+        int totalElementos = alertas.size();
+        int totalPaginas = (int) Math.ceil((double) totalElementos / sizeValue);
+        int paginaActual = Math.min(pageValue, Math.max(totalPaginas - 1, 0));
+        int inicio = Math.min(paginaActual * sizeValue, totalElementos);
+        int fin = Math.min(inicio + sizeValue, totalElementos);
+
+        return PaginatedResponse.<AlertaActividadResponse>builder()
+                .content(alertas.subList(inicio, fin))
+                .totalElements((long) totalElementos)
+                .totalPages(totalPaginas)
+                .page(paginaActual)
+                .size(sizeValue)
+                .build();
+    }
 
     public List<AlertaActividadResponse> listarAlertas() {
         proyectoLifecycleService.archivarProyectosInactivos();
