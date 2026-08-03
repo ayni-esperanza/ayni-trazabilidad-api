@@ -41,8 +41,9 @@ public class UsuarioController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "100") Integer size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Long rolId) {
-        PaginatedResponse<UsuarioResponse> response = usuarioService.obtenerUsuarios(page, size, search, rolId);
+            @RequestParam(required = false) Long rolId,
+            @RequestParam(required = false) Boolean activo) {
+        PaginatedResponse<UsuarioResponse> response = usuarioService.obtenerUsuarios(page, size, search, rolId, activo);
         return ResponseEntity.ok(response);
     }
 

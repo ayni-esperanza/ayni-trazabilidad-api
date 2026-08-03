@@ -55,13 +55,14 @@ public class UsuarioService {
                         Integer page,
                         Integer size,
                         String search,
-                        Long rolId) {
+                        Long rolId,
+                        Boolean activo) {
                 Pageable pageable = PageRequest.of(
                                 page != null ? page : Constants.Pagination.DEFAULT_PAGE,
                                 size != null ? size : Constants.Pagination.DEFAULT_SIZE,
                                 Sort.by(Sort.Direction.ASC, "nombre"));
 
-                Page<Usuario> usuariosPage = usuarioRepository.buscarConFiltros(search, rolId, pageable);
+                Page<Usuario> usuariosPage = usuarioRepository.buscarConFiltros(search, rolId, activo, pageable);
 
                 List<UsuarioResponse> content = usuariosPage.getContent().stream()
                                 .map(usuarioMapper::toResponse)

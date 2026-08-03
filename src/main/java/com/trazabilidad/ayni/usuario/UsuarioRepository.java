@@ -35,10 +35,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.telefono) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:rolId IS NULL OR EXISTS (SELECT r FROM u.roles r WHERE r.id = :rolId))")
+            "AND (:rolId IS NULL OR EXISTS (SELECT r FROM u.roles r WHERE r.id = :rolId)) " +
+            "AND (:activo IS NULL OR u.activo = :activo)")
     Page<Usuario> buscarConFiltros(
             @Param("search") String search,
             @Param("rolId") Long rolId,
+            @Param("activo") Boolean activo,
             Pageable pageable);
 
     Long countByActivoTrue();
