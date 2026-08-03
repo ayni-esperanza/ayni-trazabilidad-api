@@ -43,6 +43,7 @@ logging:
   level:
     root: WARN
     com.trazabilidad.ayni: ${LOG_LEVEL:INFO}
+    com.trazabilidad.ayni.shared.audit: INFO
     org.springframework.security: WARN
     org.hibernate: WARN # Deshabilitar todos los logs de Hibernate
     org.hibernate.SQL: OFF # Completamente deshabilitado
@@ -50,6 +51,7 @@ logging:
   file:
     name: ${LOG_FILE:/app/logs/ayni-trazabilidad.log}
   pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # ==================== SWAGGER DESHABILITADO EN PRODUCCIÓN ====================

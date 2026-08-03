@@ -1,6 +1,7 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.costo.CostoAdicionalCategoriaRepository;
 import com.trazabilidad.ayni.shared.dto.CambiarEstadoRequest;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
@@ -137,6 +138,7 @@ public class ProyectoService {
      * @param request Datos para iniciar el proyecto
      * @return Proyecto creado con sus etapas
      */
+    @Auditable(accion = "CREAR", entidad = "Proyecto")
     public ProyectoResponse iniciarProyecto(IniciarProyectoRequest request) {
         Solicitud solicitud = solicitudRepository.findById(request.getSolicitudId())
                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", request.getSolicitudId()));
@@ -274,6 +276,7 @@ public class ProyectoService {
      * Finaliza un proyecto.
      * Finaliza proyecto sin dependencia de etapas.
      */
+    @Auditable(accion = "FINALIZAR", entidad = "Proyecto")
     public ProyectoResponse finalizarProyecto(Long id) {
         Proyecto proyecto = proyectoRepository.findWithEtapasById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
@@ -293,6 +296,7 @@ public class ProyectoService {
         return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
 
+    @Auditable(accion = "ANULAR", entidad = "Proyecto")
     public ProyectoResponse cancelarProyecto(Long id, String motivo) {
         Proyecto proyecto = proyectoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));
@@ -312,6 +316,7 @@ public class ProyectoService {
         return ProyectoMapper.toResponse(updated, storageUrlResolver::resolvePublicUrl);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "Proyecto")
     public void eliminarProyecto(Long id) {
         Proyecto proyecto = proyectoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", id));

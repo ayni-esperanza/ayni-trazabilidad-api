@@ -1,5 +1,6 @@
 package com.trazabilidad.ayni.solicitud;
 
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.dto.CambiarEstadoRequest;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoSolicitud;
@@ -125,6 +126,7 @@ public class SolicitudService {
          * Crea una nueva solicitud.
          * Valida que el responsable exista y previene duplicados.
          */
+        @Auditable(accion = "CREAR", entidad = "Solicitud")
         public SolicitudResponse crear(SolicitudRequest request) {
                 Usuario responsable = usuarioRepository.findById(request.getResponsableId())
                                 .orElseThrow(() -> new EntityNotFoundException("Usuario", request.getResponsableId()));
@@ -150,6 +152,7 @@ public class SolicitudService {
          * Actualiza una solicitud existente.
          * Solo permite actualización si el estado es PENDIENTE.
          */
+        @Auditable(accion = "EDITAR", entidad = "Solicitud")
         public SolicitudResponse actualizar(Long id, SolicitudRequest request) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
@@ -213,6 +216,7 @@ public class SolicitudService {
         /**
          * Elimina una solicitud sin restringir el estado actual.
          */
+        @Auditable(accion = "ELIMINAR", entidad = "Solicitud")
         public void eliminar(Long id) {
                 Solicitud solicitud = solicitudRepository.findById(id)
                                 .orElseThrow(() -> new EntityNotFoundException("Solicitud", id));
