@@ -3,6 +3,7 @@ package com.trazabilidad.ayni.proyecto;
 import com.trazabilidad.ayni.proyecto.dto.OrdenCompraRequest;
 import com.trazabilidad.ayni.proyecto.dto.OrdenCompraResponse;
 import com.trazabilidad.ayni.proyecto.dto.FlujoAdjuntoResponse;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import com.trazabilidad.ayni.shared.storage.StorageUrlResolver;
@@ -34,6 +35,7 @@ public class OrdenCompraService {
         return ordenCompraRepository.findByProyectoId(proyectoId).stream().map(this::toResponse).toList();
     }
 
+    @Auditable(accion = "CREAR", entidad = "OrdenCompra")
     public OrdenCompraResponse crear(Long proyectoId, OrdenCompraRequest request) {
         Proyecto proyecto = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));
@@ -51,6 +53,7 @@ public class OrdenCompraService {
         return toResponse(saved);
     }
 
+    @Auditable(accion = "EDITAR", entidad = "OrdenCompra")
     public OrdenCompraResponse actualizar(Long proyectoId, Long ordenId, OrdenCompraRequest request) {
         OrdenCompra entity = ordenCompraRepository.findByProyectoIdAndId(proyectoId, ordenId)
                 .orElseThrow(() -> new EntityNotFoundException("OrdenCompra", ordenId));
@@ -64,6 +67,7 @@ public class OrdenCompraService {
         return toResponse(updated);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "OrdenCompra")
     public void eliminar(Long proyectoId, Long ordenId) {
         OrdenCompra entity = ordenCompraRepository.findByProyectoIdAndId(proyectoId, ordenId)
                 .orElseThrow(() -> new EntityNotFoundException("OrdenCompra", ordenId));
@@ -71,6 +75,7 @@ public class OrdenCompraService {
         proyectoLifecycleService.marcarProyectoComoModificado(proyectoId);
     }
 
+    @Auditable(accion = "SINCRONIZAR", entidad = "OrdenCompra")
     public List<OrdenCompraResponse> reemplazarTodas(Long proyectoId, List<OrdenCompraRequest> requests) {
         Proyecto proyecto = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));

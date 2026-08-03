@@ -4,6 +4,7 @@ import com.trazabilidad.ayni.proyecto.dto.ActividadAdjuntoRequest;
 import com.trazabilidad.ayni.proyecto.dto.ComentarioActividadRequest;
 import com.trazabilidad.ayni.proyecto.dto.ComentarioActividadResponse;
 import com.trazabilidad.ayni.proyecto.dto.FlujoAdjuntoResponse;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class ComentarioActividadService {
                 .toList();
     }
 
+    @Auditable(accion = "CREAR", entidad = "ComentarioActividad")
     public ComentarioActividadResponse crear(Long proyectoId, ComentarioActividadRequest request) {
         Proyecto proyecto = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));
@@ -61,6 +63,7 @@ public class ComentarioActividadService {
         return toResponse(saved);
     }
 
+    @Auditable(accion = "EDITAR", entidad = "ComentarioActividad")
     public ComentarioActividadResponse actualizar(Long proyectoId, Long comentarioId, ComentarioActividadRequest request) {
         ComentarioActividad comentario = comentarioActividadRepository.findByIdAndProyectoId(comentarioId, proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("ComentarioActividad", comentarioId));
@@ -82,6 +85,7 @@ public class ComentarioActividadService {
         return toResponse(updated);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "ComentarioActividad")
     public void eliminar(Long proyectoId, Long comentarioId) {
         ComentarioActividad comentario = comentarioActividadRepository.findByIdAndProyectoId(comentarioId, proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("ComentarioActividad", comentarioId));

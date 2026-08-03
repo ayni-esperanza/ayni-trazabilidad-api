@@ -5,6 +5,7 @@ import com.trazabilidad.ayni.proyecto.ActividadProyectoRepository;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.rol.RolRepository;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.DuplicateEntityException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
@@ -91,6 +92,7 @@ public class UsuarioService {
         /**
          * Crea un nuevo usuario
          */
+        @Auditable(accion = "CREAR", entidad = "Usuario")
         public UsuarioCreacionResponse crearUsuario(UsuarioRequest request) {
                 log.info("Creando usuario con email: {}", request.getEmail());
 
@@ -159,6 +161,7 @@ public class UsuarioService {
         /**
          * Actualiza un usuario existente
          */
+        @Auditable(accion = "EDITAR", entidad = "Usuario")
         public UsuarioResponse actualizarUsuario(Long id, UsuarioRequest request) {
                 log.info("Actualizando usuario con ID: {}", id);
 
@@ -199,6 +202,7 @@ public class UsuarioService {
         /**
          * Elimina lógicamente un usuario
          */
+        @Auditable(accion = "DESACTIVAR", entidad = "Usuario")
         public void eliminarUsuario(Long id) {
                 log.info("Eliminando (lógicamente) usuario con ID: {}", id);
 
@@ -220,6 +224,7 @@ public class UsuarioService {
          * Las actividades donde figure como responsable se desvinculan (responsable = null).
          * Los roles asociados se eliminan automáticamente por la FK con ON DELETE CASCADE.
          */
+        @Auditable(accion = "ELIMINAR_PERMANENTE", entidad = "Usuario")
         public void eliminarUsuarioPermanente(Long id) {
                 log.info("Eliminando (físicamente) usuario con ID: {}", id);
 
@@ -260,6 +265,7 @@ public class UsuarioService {
         /**
          * Cambia el estado activo/inactivo de un usuario
          */
+        @Auditable(accion = "CAMBIAR_ESTADO", entidad = "Usuario")
         public UsuarioResponse cambiarEstado(Long id, Boolean activo) {
                 log.info("Cambiando estado del usuario ID {} a: {}", id, activo);
 

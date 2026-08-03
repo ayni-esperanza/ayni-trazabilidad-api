@@ -6,6 +6,7 @@ import com.trazabilidad.ayni.auth.dto.RefreshTokenRequest;
 import com.trazabilidad.ayni.auth.dto.RegisterRequest;
 import com.trazabilidad.ayni.rol.Rol;
 import com.trazabilidad.ayni.rol.RolRepository;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.DuplicateEntityException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
@@ -43,6 +44,7 @@ public class AuthService {
         private long jwtExpirationMs;
 
         @Transactional
+        @Auditable(accion = "INICIAR_SESION", entidad = "Autenticacion")
         public AuthResponse login(LoginRequest request) {
                 Authentication authentication = authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(
@@ -69,6 +71,7 @@ public class AuthService {
         }
 
         @Transactional
+        @Auditable(accion = "REGISTRAR", entidad = "Usuario")
         public AuthResponse register(RegisterRequest request) {
                 if (usuarioRepository.existsByEmail(request.getEmail())) {
                         throw new DuplicateEntityException("El email ya está registrado");

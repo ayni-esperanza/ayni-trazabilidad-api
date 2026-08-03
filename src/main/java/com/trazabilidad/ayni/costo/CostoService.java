@@ -4,6 +4,7 @@ import com.trazabilidad.ayni.costo.dto.*;
 import com.trazabilidad.ayni.proyecto.Proyecto;
 import com.trazabilidad.ayni.proyecto.ProyectoLifecycleService;
 import com.trazabilidad.ayni.proyecto.ProyectoRepository;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.exception.BadRequestException;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,7 @@ public class CostoService {
                 .toList();
     }
 
+    @Auditable(accion = "CREAR", entidad = "TipoMaterial")
     public CostoCatalogoResponse registrarTipoMaterial(Long proyectoId, CostoCatalogoRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
         String nombre = normalizarNombreCatalogo(request.getNombre());
@@ -77,6 +79,7 @@ public class CostoService {
         return toCatalogoResponse(tipo);
     }
 
+    @Auditable(accion = "EDITAR", entidad = "TipoMaterial")
     public CostoCatalogoResponse actualizarTipoMaterial(Long proyectoId, Long tipoId, CostoCatalogoRequest request) {
         obtenerProyecto(proyectoId);
         CostoMaterialTipo tipo = costoMaterialTipoRepository.findById(tipoId)
@@ -94,6 +97,7 @@ public class CostoService {
         return toCatalogoResponse(tipo);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "TipoMaterial")
     public void eliminarTipoMaterial(Long proyectoId, Long tipoId) {
         obtenerProyecto(proyectoId);
         CostoMaterialTipo tipo = costoMaterialTipoRepository.findById(tipoId)
@@ -112,6 +116,7 @@ public class CostoService {
     /**
      * Registra un nuevo costo de material.
      */
+    @Auditable(accion = "CREAR", entidad = "CostoMaterial")
     public CostoMaterialResponse registrarMaterial(Long proyectoId, CostoMaterialRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -126,6 +131,7 @@ public class CostoService {
     /**
      * Registra múltiples costos de material en batch.
      */
+    @Auditable(accion = "CREAR_LOTE", entidad = "CostoMaterial")
     public List<CostoMaterialResponse> registrarMateriales(Long proyectoId, List<CostoMaterialRequest> requests) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -146,6 +152,7 @@ public class CostoService {
     /**
      * Actualiza un costo de material existente.
      */
+    @Auditable(accion = "EDITAR", entidad = "CostoMaterial")
     public CostoMaterialResponse actualizarMaterial(Long proyectoId, Long id, CostoMaterialRequest request) {
         CostoMaterial material = costoMaterialRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoMaterial", id));
@@ -164,6 +171,7 @@ public class CostoService {
     /**
      * Elimina un costo de material.
      */
+    @Auditable(accion = "ELIMINAR", entidad = "CostoMaterial")
     public void eliminarMaterial(Long proyectoId, Long id) {
         CostoMaterial material = costoMaterialRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoMaterial", id));
@@ -204,6 +212,7 @@ public class CostoService {
                 .toList();
     }
 
+    @Auditable(accion = "CREAR", entidad = "Oficio")
     public CostoCatalogoResponse registrarOficioManoObra(Long proyectoId, CostoCatalogoRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
         String nombre = normalizarNombreCatalogo(request.getNombre());
@@ -217,6 +226,7 @@ public class CostoService {
         return toCatalogoResponse(oficio);
     }
 
+    @Auditable(accion = "EDITAR", entidad = "Oficio")
     public CostoCatalogoResponse actualizarOficioManoObra(Long proyectoId, Long oficioId, CostoCatalogoRequest request) {
         obtenerProyecto(proyectoId);
         CostoManoObraOficio oficio = costoManoObraOficioRepository.findById(oficioId)
@@ -234,6 +244,7 @@ public class CostoService {
         return toCatalogoResponse(oficio);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "Oficio")
     public void eliminarOficioManoObra(Long proyectoId, Long oficioId) {
         obtenerProyecto(proyectoId);
         CostoManoObraOficio oficio = costoManoObraOficioRepository.findById(oficioId)
@@ -245,6 +256,7 @@ public class CostoService {
     /**
      * Registra un nuevo costo de mano de obra.
      */
+    @Auditable(accion = "CREAR", entidad = "CostoManoObra")
     public CostoManoObraResponse registrarManoObra(Long proyectoId, CostoManoObraRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -258,6 +270,7 @@ public class CostoService {
     /**
      * Registra múltiples costos de mano de obra en batch.
      */
+    @Auditable(accion = "CREAR_LOTE", entidad = "CostoManoObra")
     public List<CostoManoObraResponse> registrarManoObras(Long proyectoId, List<CostoManoObraRequest> requests) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -274,6 +287,7 @@ public class CostoService {
     /**
      * Actualiza un costo de mano de obra existente.
      */
+    @Auditable(accion = "EDITAR", entidad = "CostoManoObra")
     public CostoManoObraResponse actualizarManoObra(Long proyectoId, Long id, CostoManoObraRequest request) {
         CostoManoObra manoObra = costoManoObraRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoManoObra", id));
@@ -291,6 +305,7 @@ public class CostoService {
     /**
      * Elimina un costo de mano de obra.
      */
+    @Auditable(accion = "ELIMINAR", entidad = "CostoManoObra")
     public void eliminarManoObra(Long proyectoId, Long id) {
         CostoManoObra manoObra = costoManoObraRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoManoObra", id));
@@ -339,6 +354,7 @@ public class CostoService {
                 .toList();
     }
 
+    @Auditable(accion = "CREAR", entidad = "CategoriaCosto")
     public CostoAdicionalCategoriaResponse registrarCategoria(Long proyectoId, CostoAdicionalCategoriaRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
         String nombre = request.getNombre().trim();
@@ -357,6 +373,7 @@ public class CostoService {
                 .build();
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "CategoriaCosto")
     public void eliminarCategoria(Long proyectoId, Long categoriaId) {
         CostoAdicionalCategoria categoria = costoAdicionalCategoriaRepository.findByIdAndProyectoId(categoriaId, proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("CostoAdicionalCategoria", categoriaId));
@@ -373,6 +390,7 @@ public class CostoService {
     /**
      * Registra un nuevo costo adicional.
      */
+    @Auditable(accion = "CREAR", entidad = "CostoAdicional")
     public CostoAdicionalResponse registrarAdicional(Long proyectoId, CostoAdicionalRequest request) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -386,6 +404,7 @@ public class CostoService {
     /**
      * Registra múltiples costos adicionales en batch.
      */
+    @Auditable(accion = "CREAR_LOTE", entidad = "CostoAdicional")
     public List<CostoAdicionalResponse> registrarAdicionales(Long proyectoId, List<CostoAdicionalRequest> requests) {
         Proyecto proyecto = obtenerProyecto(proyectoId);
 
@@ -402,6 +421,7 @@ public class CostoService {
     /**
      * Actualiza un costo adicional existente.
      */
+    @Auditable(accion = "EDITAR", entidad = "CostoAdicional")
     public CostoAdicionalResponse actualizarAdicional(Long proyectoId, Long id, CostoAdicionalRequest request) {
         CostoAdicional adicional = costoAdicionalRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoAdicional", id));
@@ -419,6 +439,7 @@ public class CostoService {
     /**
      * Elimina un costo adicional.
      */
+    @Auditable(accion = "ELIMINAR", entidad = "CostoAdicional")
     public void eliminarAdicional(Long proyectoId, Long id) {
         CostoAdicional adicional = costoAdicionalRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("CostoAdicional", id));

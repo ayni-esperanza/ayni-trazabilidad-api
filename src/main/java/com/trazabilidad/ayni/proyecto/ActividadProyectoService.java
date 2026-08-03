@@ -1,6 +1,7 @@
 package com.trazabilidad.ayni.proyecto;
 
 import com.trazabilidad.ayni.proyecto.dto.*;
+import com.trazabilidad.ayni.shared.audit.Auditable;
 import com.trazabilidad.ayni.shared.dto.PaginatedResponse;
 import com.trazabilidad.ayni.shared.enums.EstadoProyecto;
 import com.trazabilidad.ayni.shared.exception.EntityNotFoundException;
@@ -73,6 +74,7 @@ public class ActividadProyectoService {
                 .build();
     }
 
+    @Auditable(accion = "CREAR", entidad = "Actividad")
     public FlujoNodoResponse crear(Long proyectoId, ActividadProyectoRequest request) {
         Proyecto proyecto = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto", proyectoId));
@@ -114,6 +116,7 @@ public class ActividadProyectoService {
         return mapToFlujoNodo(saved);
     }
 
+    @Auditable(accion = "EDITAR", entidad = "Actividad")
     public FlujoNodoResponse actualizar(Long proyectoId, Long actividadId, ActividadProyectoRequest request) {
         ActividadProyecto actividad = actividadProyectoRepository.findByProyectoIdAndId(proyectoId, actividadId)
                 .orElseThrow(() -> new EntityNotFoundException("ActividadProyecto", actividadId));
@@ -150,6 +153,7 @@ public class ActividadProyectoService {
         return mapToFlujoNodo(updated);
     }
 
+    @Auditable(accion = "ELIMINAR", entidad = "Actividad")
     public void eliminar(Long proyectoId, Long actividadId) {
         ActividadProyecto actividad = actividadProyectoRepository.findByProyectoIdAndId(proyectoId, actividadId)
                 .orElseThrow(() -> new EntityNotFoundException("ActividadProyecto", actividadId));
