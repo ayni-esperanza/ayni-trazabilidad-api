@@ -64,6 +64,14 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long>,
          */
         boolean existsBySolicitudId(Long solicitudId);
 
+        interface SolicitudProyectoResumen {
+                Long getProyectoId();
+                Long getSolicitudId();
+        }
+
+        @Query("select p.id as proyectoId, p.solicitud.id as solicitudId from Proyecto p where p.solicitud.id in :solicitudIds")
+        List<SolicitudProyectoResumen> findResumenesBySolicitudIdIn(@Param("solicitudIds") List<Long> solicitudIds);
+
         /**
          * Cuenta proyectos por estado.
          */

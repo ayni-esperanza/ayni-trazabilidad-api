@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar solicitudes.
@@ -100,9 +101,20 @@ public class SolicitudService {
                 Page<Solicitud> page = solicitudRepository.buscarConFiltros(
                                 search, estado != null ? estado.name() : null, cliente, responsableId, fechaDesde, fechaHasta, translatedPageable);
 
+                Map<Long, Long> proyectosPorSolicitud = page.getContent().isEmpty()
+                                ? Map.of()
+                                : proyectoRepository.findResumenesBySolicitudIdIn(page.getContent().stream()
+                                                .map(Solicitud::getId)
+                                                .toList())
+                                                .stream()
+                                                .collect(Collectors.toMap(
+                                                                ProyectoRepository.SolicitudProyectoResumen::getSolicitudId,
+                                                                ProyectoRepository.SolicitudProyectoResumen::getProyectoId));
+
                 return PaginatedResponse.<SolicitudResponse>builder()
                                 .content(page.getContent().stream()
-                                                .map(SolicitudMapper::toResponse)
+                                                .map(solicitud -> SolicitudMapper.toResponse(solicitud,
+                                                                proyectosPorSolicitud.get(solicitud.getId())))
                                                 .toList())
                                 .page(page.getNumber())
                                 .size(page.getSize())
@@ -259,6 +271,7 @@ public class SolicitudService {
                                                 .nombre(usuario.getNombreCompleto().trim())
                                                 .cargo("")
                                                 .email(usuario.getEmail())
+                                                .foto(usuario.getFoto())
                                                 .build())
                                 .toList();
         }

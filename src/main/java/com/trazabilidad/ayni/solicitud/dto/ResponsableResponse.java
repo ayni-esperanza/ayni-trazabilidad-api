@@ -14,4 +14,5 @@ public class ResponsableResponse {
     private String nombre;
     private String cargo;
     private String email;
+    private String foto;
 }

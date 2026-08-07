@@ -24,6 +24,10 @@ public class SolicitudMapper {
      * @return DTO de respuesta
      */
     public static SolicitudResponse toResponse(Solicitud solicitud) {
+        return toResponse(solicitud, null);
+    }
+
+    public static SolicitudResponse toResponse(Solicitud solicitud, Long proyectoId) {
         if (solicitud == null)
             return null;
 
@@ -44,8 +48,8 @@ public class SolicitudMapper {
                 .fechaInicio(solicitud.getFechaInicio())
                 .fechaFin(solicitud.getFechaFin())
                 .estado(solicitud.getEstado().getDisplayName())
-                .tieneProyecto(false)
-                .proyectoId(null)
+                .tieneProyecto(proyectoId != null)
+                .proyectoId(proyectoId)
                 .fechaCreacion(solicitud.getFechaCreacion())
                 .fechaActualizacion(solicitud.getFechaActualizacion())
                 .build();
